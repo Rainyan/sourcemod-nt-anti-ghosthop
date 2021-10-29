@@ -4,7 +4,7 @@
 
 #include <neotokyo>
 
-#define PLUGIN_VERSION "0.2"
+#define PLUGIN_VERSION "0.3"
 #define PLUGIN_TAG "[ANTI-GHOSTHOP]"
 
 // Max. flat ground speed of a recon wall-running with the ghost in an optimal 8 degree angle.
