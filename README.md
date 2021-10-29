@@ -5,7 +5,7 @@ SourceMod plugin for Neotokyo. Forces you to drop the ghost if going too fast mi
 NT has a max speed limitation for the ghost carrier to make rushy quick capping less effective.
 However, players could circumvent this limitation by bhopping and/or using the recon AUX jump (dubbed "*ghost hopping*").
 
-For a long time, there's been a sort of gentlemans' agreement not to abuse ghost hopping,
+For a long time, there's been a sort of gentlemen's agreement not to abuse ghost hopping,
 and anti-ghosthop rules have also made their way into many competitive rulesets.
 
 This plugin suggests a different approach, whereby ghost hopping is restricted programmatically, rather than by ambiguous case-by-case rulings.
