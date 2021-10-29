@@ -32,3 +32,8 @@ A recon carrying the ghost on flat ground, doing an optimal wallrun speed boost 
 * Make ghost hopping rulings less ambiguous (the server can automatically decide what is too fast instead of admin intervention)
 
 Thanks for attending my ted talk.
+
+## For server operators
+
+### Troubleshooting
+If *SDKHooks_DropWeapon()* is erroring out in your SourceMod logs, and you are using SM 1.10, make sure your build version [is at least 6517](https://github.com/alliedmodders/sourcemod/commit/36341a5984f21aeb4621d321f3af940) or newer.
