@@ -10,6 +10,9 @@
 // Max. flat ground speed of a recon wall-running with the ghost in an optimal 8 degree angle.
 #define GHOSTER_MAX_VELOCITY 255.47
 
+// Max. flat ground speed of a recon wall-running with knife out.
+#define RECON_MAX_WALLRUN_SPEED 344.56
+
 // This is the fastest lateral velocity permitted for an airborne ghost carrier.
 #define GHOSTER_MAX_ALLOWED_AIR_VELOCITY GHOSTER_MAX_VELOCITY
 
@@ -42,7 +45,7 @@ public void OnPluginStart()
     CreateConVar("sm_nt_anti_ghostcap_version", PLUGIN_VERSION,
         "NT Anti Ghosthop plugin version", FCVAR_SPONLY  | FCVAR_REPLICATED | FCVAR_NOTIFY);
 
-    cMaxAirspeed = CreateConVar("sm_nt_anti_ghostcap_max_airspeed", "255.47",
+    cMaxAirspeed = CreateConVar("sm_nt_anti_ghostcap_max_airspeed", "344.56",
         "Maximum allowed ghoster air speed.", _, true, 0.0, true, 10000.0);
 
     _playerprop_weps_offset = FindSendPropInfo("CBasePlayer", "m_hMyWeapons");
