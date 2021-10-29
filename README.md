@@ -33,6 +33,8 @@ A recon carrying the ghost on flat ground, doing an optimal wallrun speed boost 
 
 Thanks for attending my ted talk.
 
+<hr>
+
 ## For server operators
 
 ### Troubleshooting
