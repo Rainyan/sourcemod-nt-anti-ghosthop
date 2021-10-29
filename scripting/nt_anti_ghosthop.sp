@@ -4,7 +4,7 @@
 
 #include <neotokyo>
 
-#define PLUGIN_VERSION "0.1"
+#define PLUGIN_VERSION "0.2"
 #define PLUGIN_TAG "[ANTI-GHOSTHOP]"
 
 // Max. flat ground speed of a recon wall-running with the ghost in an optimal 8 degree angle.
@@ -12,10 +12,6 @@
 
 // This is the fastest lateral velocity permitted for an airborne ghost carrier.
 #define GHOSTER_MAX_ALLOWED_AIR_VELOCITY GHOSTER_MAX_VELOCITY
-
-// The ghost will start emitting unhappy sound effects if you're flying this fast
-// to signal to the player that they are approaching the max allowed ghosthop velocity.
-#define GHOSTER_WARN_VELOCITY (GHOSTER_MAX_ALLOWED_AIR_VELOCITY * 0.5)
 
 // Sound effect to use for warning player of the speed limit.
 #define SFX_AIR_SPEED_WARNING "gameplay/ghost_idle_loop.wav"
@@ -31,6 +27,8 @@ static bool _is_ghost_making_noises = false;
 
 //#define DEBUG
 
+ConVar cMaxAirspeed = null;
+
 public Plugin myinfo = {
     name = "NT Anti Ghosthop",
     description = "Forces you to drop the ghost if going too fast mid-air.",
@@ -41,13 +39,11 @@ public Plugin myinfo = {
 
 public void OnPluginStart()
 {
-    if (GHOSTER_MAX_ALLOWED_AIR_VELOCITY <= GHOSTER_WARN_VELOCITY)
-    {
-        SetFailState("GHOSTER_MAX_ALLOWED_AIR_VELOCITY (%f) must be larger than GHOSTER_WARN_VELOCITY (%f)",
-            GHOSTER_MAX_ALLOWED_AIR_VELOCITY, GHOSTER_WARN_VELOCITY);
-    }
+    CreateConVar("sm_nt_anti_ghostcap_version", PLUGIN_VERSION,
+        "NT Anti Ghosthop plugin version", FCVAR_SPONLY  | FCVAR_REPLICATED | FCVAR_NOTIFY);
 
-    CreateConVar("sm_nt_anti_ghostcap_version", PLUGIN_VERSION, "NT Anti Ghosthop plugin version", FCVAR_SPONLY  | FCVAR_REPLICATED | FCVAR_NOTIFY);
+    cMaxAirspeed = CreateConVar("sm_nt_anti_ghostcap_max_airspeed", "255.47",
+        "Maximum allowed ghoster air speed.", _, true, 0.0, true, 10000.0);
 
     _playerprop_weps_offset = FindSendPropInfo("CBasePlayer", "m_hMyWeapons");
     if (_playerprop_weps_offset == -1)
@@ -147,17 +143,20 @@ public void OnPlayerRunCmdPost(int client, int buttons, int impulse,
                 // This is the same unit of velocity that cl_showpos displays.
                 float lateral_air_velocity = distance / delta_time;
 
+                float max_speed = cMaxAirspeed.FloatValue;
+                float warn_speed = max_speed * 0.75;
+
                 // Check yourself
-                if (lateral_air_velocity > GHOSTER_WARN_VELOCITY)
+                if (lateral_air_velocity > warn_speed)
                 {
                     int wep = GetEntDataEnt2(client,_playerprop_weps_offset);
                     if (wep == ghost)
                     {
                         // Before you wreck yourself
-                        if (lateral_air_velocity > GHOSTER_MAX_ALLOWED_AIR_VELOCITY)
+                        if (lateral_air_velocity > max_speed)
                         {
 #if defined(DEBUG)
-                            PrintToServer("DROP: %f > %f", lateral_air_velocity, GHOSTER_MAX_ALLOWED_AIR_VELOCITY);
+                            PrintToServer("DROP: %f > %f", lateral_air_velocity, max_speed);
 #endif
                             SDKHooks_DropWeapon(client, ghost, ghoster_pos, NULL_VECTOR);
                             StopGhostComplainyNoises();
