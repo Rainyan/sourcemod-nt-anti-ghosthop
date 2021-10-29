@@ -4,7 +4,7 @@
 
 #include <neotokyo>
 
-#define PLUGIN_VERSION "0.3"
+#define PLUGIN_VERSION "0.4"
 #define PLUGIN_TAG "[ANTI-GHOSTHOP]"
 
 // Max. flat ground speed of a recon wall-running with the ghost in an optimal 8 degree angle.
@@ -42,10 +42,10 @@ public Plugin myinfo = {
 
 public void OnPluginStart()
 {
-    CreateConVar("sm_nt_anti_ghostcap_version", PLUGIN_VERSION,
+    CreateConVar("sm_nt_anti_ghosthop_version", PLUGIN_VERSION,
         "NT Anti Ghosthop plugin version", FCVAR_SPONLY  | FCVAR_REPLICATED | FCVAR_NOTIFY);
 
-    cMaxAirspeed = CreateConVar("sm_nt_anti_ghostcap_max_airspeed", "344.56",
+    cMaxAirspeed = CreateConVar("sm_nt_anti_ghosthop_max_airspeed", "344.56",
         "Maximum allowed ghoster air speed.", _, true, 0.0, true, 10000.0);
 
     _playerprop_weps_offset = FindSendPropInfo("CBasePlayer", "m_hMyWeapons");
