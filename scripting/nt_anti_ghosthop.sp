@@ -4,7 +4,7 @@
 
 #include <neotokyo>
 
-#define PLUGIN_VERSION "0.4"
+#define PLUGIN_VERSION "0.4.1"
 #define PLUGIN_TAG "[ANTI-GHOSTHOP]"
 
 // Max. flat ground speed of a recon wall-running with the ghost in an optimal 8 degree angle.
@@ -222,7 +222,7 @@ void StartGhostComplainyNoises()
             return;
         }
 
-        EmitSoundToAll(SFX_AIR_SPEED_WARNING, ghost);
+        //EmitSoundToAll(SFX_AIR_SPEED_WARNING, ghost);
         _is_ghost_making_noises = true;
 
         int carrier = GetClientOfUserId(_ghost_carrier_userid);
@@ -248,7 +248,7 @@ void StopGhostComplainyNoises()
         int ghost = EntRefToEntIndex(_last_ghost);
         if (ghost != 0 && ghost != INVALID_ENT_REFERENCE)
         {
-            StopSound(ghost, SNDCHAN_AUTO, SFX_AIR_SPEED_WARNING);
+            //StopSound(ghost, SNDCHAN_AUTO, SFX_AIR_SPEED_WARNING);
         }
         _is_ghost_making_noises = false;
     }
