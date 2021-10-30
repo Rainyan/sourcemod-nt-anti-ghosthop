@@ -1,6 +1,8 @@
 # sourcemod-nt-anti-ghosthop
 SourceMod plugin for Neotokyo. Forces you to drop the ghost if going too fast mid-air.
 
+https://user-images.githubusercontent.com/6595066/139524476-7a089902-74a4-49ce-bfe6-f721eb7ad004.mp4
+
 ## Some background
 NT has a max speed limitation for the ghost carrier to make rushy quick capping less effective.
 However, players could circumvent this limitation by bhopping and/or using the recon AUX jump (dubbed "*ghost hopping*").
