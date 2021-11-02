@@ -137,13 +137,13 @@ public void OnPlayerRunCmdPost(int client, int buttons, int impulse,
                         if (lateral_air_velocity > max_speed)
                         {
                             SDKHooks_DropWeapon(client, ghost, ghoster_pos, NULL_VECTOR);
-                            StopGhostComplainyNoises();
+                            CancelApproachSpeedLimit();
 
                             PrintToChat(client, "%s YOU HAVE DROPPED THE GHOST (Maximum air velocity exceeded.)", PLUGIN_TAG);
                         }
                         else
                         {
-                            StartGhostComplainyNoises();
+                            ApproachSpeedLimit();
                         }
                     }
                 }
@@ -152,7 +152,7 @@ public void OnPlayerRunCmdPost(int client, int buttons, int impulse,
                 // but just good old regular jumping while holding the ghost.
                 else
                 {
-                    StopGhostComplainyNoises();
+                    CancelApproachSpeedLimit();
                 }
             }
         }
@@ -163,15 +163,12 @@ public void OnPlayerRunCmdPost(int client, int buttons, int impulse,
 
 void ResetGhoster()
 {
-    StopGhostComplainyNoises();
+    CancelApproachSpeedLimit();
     _ghost_carrier_userid = 0;
     _prev_ghoster_pos = NULL_VECTOR;
 }
 
-// Call this to make the ghost start playing glitchy noises as an audio cue
-// for the player that they're nearing the allowed ghosthop speed limit.
-// Player will also receive a chat message explaining this mechanic.
-void StartGhostComplainyNoises()
+void ApproachSpeedLimit()
 {
     if (!_is_ghoster_approaching_speed_limit)
     {
@@ -191,15 +188,14 @@ void StartGhostComplainyNoises()
         }
         else
         {
-            StopGhostComplainyNoises();
+            CancelApproachSpeedLimit();
             // Have to hard fail because if this ever happens, we'd otherwise destroy server performance with the OnPlayerRunCmdPost call errors here
             SetFailState("Invalid ghost carrier userid %d", _ghost_carrier_userid);
         }
     }
 }
 
-// Call this to stop the ghosthop audio cue.
-void StopGhostComplainyNoises()
+void CancelApproachSpeedLimit()
 {
     _is_ghoster_approaching_speed_limit = false;
 }
