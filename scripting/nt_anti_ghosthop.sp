@@ -4,7 +4,7 @@
 
 #include <neotokyo>
 
-#define PLUGIN_VERSION "0.4.1"
+#define PLUGIN_VERSION "0.4.2"
 #define PLUGIN_TAG "[ANTI-GHOSTHOP]"
 
 // Max. flat ground speed of a recon wall-running with the ghost in an optimal 8 degree angle.
@@ -228,7 +228,7 @@ void StartGhostComplainyNoises()
         int carrier = GetClientOfUserId(_ghost_carrier_userid);
         if (carrier != 0)
         {
-            PrintToChat(carrier, "%s You are approaching maximum allowed ghost hopping speed (%.1f).", PLUGIN_TAG, GHOSTER_MAX_VELOCITY);
+            PrintToChat(carrier, "%s You are approaching maximum allowed ghost hopping speed (%.1f).", PLUGIN_TAG, cMaxAirspeed.FloatValue);
             PrintToChat(carrier, "The ghost will drop from your hands if you exceed this speed limit.");
         }
         else
