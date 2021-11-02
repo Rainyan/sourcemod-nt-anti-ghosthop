@@ -4,7 +4,7 @@
 
 #include <neotokyo>
 
-#define PLUGIN_VERSION "0.4.3"
+#define PLUGIN_VERSION "0.4.4"
 #define PLUGIN_TAG "[ANTI-GHOSTHOP]"
 
 // Caching this stuff because we're using it on each tick
