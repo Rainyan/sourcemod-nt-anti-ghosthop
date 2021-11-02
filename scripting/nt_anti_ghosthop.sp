@@ -4,29 +4,15 @@
 
 #include <neotokyo>
 
-#define PLUGIN_VERSION "0.4.2"
+#define PLUGIN_VERSION "0.4.3"
 #define PLUGIN_TAG "[ANTI-GHOSTHOP]"
-
-// Max. flat ground speed of a recon wall-running with the ghost in an optimal 8 degree angle.
-#define GHOSTER_MAX_VELOCITY 255.47
-
-// Max. flat ground speed of a recon wall-running with knife out.
-#define RECON_MAX_WALLRUN_SPEED 344.56
-
-// This is the fastest lateral velocity permitted for an airborne ghost carrier.
-#define GHOSTER_MAX_ALLOWED_AIR_VELOCITY GHOSTER_MAX_VELOCITY
-
-// Sound effect to use for warning player of the speed limit.
-#define SFX_AIR_SPEED_WARNING "gameplay/ghost_idle_loop.wav"
 
 // Caching this stuff because we're using it on each tick
 static int _ghost_carrier_userid;
 static int _last_ghost; // ent ref
 static int _playerprop_weps_offset;
 static float _prev_ghoster_pos[3];
-
-// Tracking sfx playback state so we don't emit/silence the sound more than necessary.
-static bool _is_ghost_making_noises = false;
+static bool _is_ghoster_approaching_speed_limit = false;
 
 //#define DEBUG
 
@@ -60,14 +46,6 @@ public void OnAllPluginsLoaded()
     if (FindConVar("sm_ntghostcap_version") == null)
     {
         SetFailState("This plugin requires the nt_ghostcap plugin");
-    }
-}
-
-public void OnMapStart()
-{
-    if (!PrecacheSound(SFX_AIR_SPEED_WARNING))
-    {
-        SetFailState("Failed to precache sound: %s", SFX_AIR_SPEED_WARNING);
     }
 }
 
@@ -130,7 +108,7 @@ public void OnPlayerRunCmdPost(int client, int buttons, int impulse,
         if (!(GetEntityFlags(client) & FL_ONGROUND))
         {
             // We need to have a previous known position to calculate velocity.
-            if (!VectorsEqual(_prev_ghoster_pos, NULL_VECTOR))
+            if (!IsNullVector(_prev_ghoster_pos))
             {
                 float dir[3];
                 SubtractVectors(ghoster_pos, _prev_ghoster_pos, dir);
@@ -158,9 +136,6 @@ public void OnPlayerRunCmdPost(int client, int buttons, int impulse,
                         // Before you wreck yourself
                         if (lateral_air_velocity > max_speed)
                         {
-#if defined(DEBUG)
-                            PrintToServer("DROP: %f > %f", lateral_air_velocity, max_speed);
-#endif
                             SDKHooks_DropWeapon(client, ghost, ghoster_pos, NULL_VECTOR);
                             StopGhostComplainyNoises();
 
@@ -168,19 +143,9 @@ public void OnPlayerRunCmdPost(int client, int buttons, int impulse,
                         }
                         else
                         {
-#if defined(DEBUG)
-                            PrintToServer("Complain noise!");
-#endif
                             StartGhostComplainyNoises();
                         }
                     }
-#if(0)
-                    // This should never happen. But checking just in case
-                    // the client somehow managed to switch primaries.
-                    else
-                    {
-                    }
-#endif
                 }
                 // Else, we have a reasonably slow air speed.
                 // This is not considered ghost hopping at all,
@@ -194,12 +159,6 @@ public void OnPlayerRunCmdPost(int client, int buttons, int impulse,
 
         _prev_ghoster_pos = ghoster_pos;
     }
-#if defined(DEBUG)
-    else
-    {
-        PrintToServer("Userid %d != ghost carr userid %d", userid, _ghost_carrier_userid);
-    }
-#endif
 }
 
 void ResetGhoster()
@@ -214,7 +173,7 @@ void ResetGhoster()
 // Player will also receive a chat message explaining this mechanic.
 void StartGhostComplainyNoises()
 {
-    if (!_is_ghost_making_noises)
+    if (!_is_ghoster_approaching_speed_limit)
     {
         int ghost = EntRefToEntIndex(_last_ghost);
         if (ghost == 0 || ghost == INVALID_ENT_REFERENCE)
@@ -222,8 +181,7 @@ void StartGhostComplainyNoises()
             return;
         }
 
-        //EmitSoundToAll(SFX_AIR_SPEED_WARNING, ghost);
-        _is_ghost_making_noises = true;
+        _is_ghoster_approaching_speed_limit = true;
 
         int carrier = GetClientOfUserId(_ghost_carrier_userid);
         if (carrier != 0)
@@ -243,34 +201,5 @@ void StartGhostComplainyNoises()
 // Call this to stop the ghosthop audio cue.
 void StopGhostComplainyNoises()
 {
-    if (_is_ghost_making_noises)
-    {
-        int ghost = EntRefToEntIndex(_last_ghost);
-        if (ghost != 0 && ghost != INVALID_ENT_REFERENCE)
-        {
-            //StopSound(ghost, SNDCHAN_AUTO, SFX_AIR_SPEED_WARNING);
-        }
-        _is_ghost_making_noises = false;
-    }
-}
-
-stock float Clamp(float value, float min, float max)
-{
-    return value < min ? min : value > max ? max : value;
-}
-
-stock bool VectorsEqual(const float[3] v1, const float[3] v2,
-    const float max_ulps = 0.0)
-{
-    // Needs to exactly equal.
-    if (max_ulps == 0) {
-        return v1[0] == v2[0] && v1[1] == v2[1] && v1[2] == v2[2];
-    }
-    // Allow an inaccuracy of size max_ulps.
-    else {
-        if (FloatAbs(v1[0] - v2[0]) > max_ulps) { return false; }
-        if (FloatAbs(v1[1] - v2[1]) > max_ulps) { return false; }
-        if (FloatAbs(v1[2] - v2[2]) > max_ulps) { return false; }
-        return true;
-    }
+    _is_ghoster_approaching_speed_limit = false;
 }
