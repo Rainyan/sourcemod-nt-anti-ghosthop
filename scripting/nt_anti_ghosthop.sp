@@ -4,16 +4,25 @@
 
 #include <neotokyo>
 
-#define PLUGIN_VERSION "0.4.5"
+//#define DEBUG
+//#define DEBUG_PROFILE
+
+#if defined(DEBUG_PROFILE)
+#include <profiler>
+Profiler _profiler = null;
+#endif
+
+#define PLUGIN_VERSION "0.5.0"
 #define PLUGIN_TAG "[ANTI-GHOSTHOP]"
+
+#define NEO_MAXPLAYERS 32
 
 // Caching this stuff because we're potentially using it on each tick
 static int _ghost_carrier_userid;
 static int _last_ghost; // ent ref
 static int _playerprop_weps_offset;
 static float _prev_ghoster_pos[3];
-
-//#define DEBUG
+static float _prev_cmd_time[NEO_MAXPLAYERS + 1];
 
 ConVar cMaxAirspeed = null;
 
@@ -27,9 +36,14 @@ public Plugin myinfo = {
 
 public void OnPluginStart()
 {
+#if defined(DEBUG_PROFILE)
+    _profiler = CreateProfiler();
+#endif
+
     CreateConVar("sm_nt_anti_ghosthop_version", PLUGIN_VERSION,
         "NT Anti Ghosthop plugin version", FCVAR_SPONLY  | FCVAR_REPLICATED | FCVAR_NOTIFY);
 
+    // 344.56 is the fastest recon (knife/pistol) run speed with an 8 degree wallrun boost.
     cMaxAirspeed = CreateConVar("sm_nt_anti_ghosthop_max_airspeed", "344.56",
         "Maximum allowed ghoster air speed.", _, true, 0.0);
 
@@ -51,6 +65,16 @@ public void OnAllPluginsLoaded()
 public void OnMapEnd()
 {
     ResetGhoster();
+
+    for (int i = 0; i < sizeof(_prev_cmd_time); ++i)
+    {
+        _prev_cmd_time[i] = 0.0;
+    }
+}
+
+public void OnClientDisconnect(int client)
+{
+    _prev_cmd_time[client] = 0.0;
 }
 
 public void OnGhostCapture(int client)
@@ -80,8 +104,8 @@ public void OnPlayerRunCmdPost(int client, int buttons, int impulse,
     int cmdnum, int tickcount, int seed, const int mouse[2])
 {
 #if defined(DEBUG)
-	// Need >1 clients for ghost to trigger,
-	// but don't want bots input for cleaner srcds debug log lines.
+    // Need >1 clients for ghost to trigger,
+    // but don't want bots input for cleaner srcds debug log lines.
     if (IsFakeClient(client))
     {
         return;
@@ -101,24 +125,40 @@ public void OnPlayerRunCmdPost(int client, int buttons, int impulse,
         // We need to have a previous known position to calculate velocity.
         !IsNullVector(_prev_ghoster_pos))
     {
+#if defined(DEBUG_PROFILE)
+        _profiler.Start();
+#endif
+
         float dir[3];
         SubtractVectors(ghoster_pos, _prev_ghoster_pos, dir);
-
         // Only interested in lateral movements.
         // Zeroing the vertical axis prevents false positives on fast
         // upwards jumps, or when falling.
         dir[2] = 0.0;
-
         float distance = GetVectorLength(dir);
-        float delta_time = GetTickInterval(); // TODO/FIXME: use client tickrate! We are assuming sv_minmax cmdrates to equal server tickrate as is the case with Creamy, but this is not guaranteed!!!
+
+        float time = GetGameTime();
+        float delta_time = time - _prev_cmd_time[client];
+        // Would result in division by zero, so get some reasonable approximation.
+        if (delta_time == 0)
+        {
+            delta_time = GetTickInterval();
+        }
+        _prev_cmd_time[client] = time;
+
         // Estimate our current speed in engine units per second.
         // This is the same unit of velocity that cl_showpos displays.
         float lateral_air_velocity = distance / delta_time;
 
+#if defined(DEBUG_PROFILE)
+        _profiler.Stop();
+        PrintToServer("Profiler (OnPlayerRunCmdPost): %f", _profiler.Time);
+#endif
+
         if (lateral_air_velocity > cMaxAirspeed.FloatValue)
         {
             int ghost = EntRefToEntIndex(_last_ghost);
-            // We had a ghoster userid but ghost itself no longer exists for whatever reason.
+            // We had a ghoster userid but the ghost itself no longer exists for whatever reason.
             if (ghost == 0 || ghost == INVALID_ENT_REFERENCE)
             {
                 ResetGhoster();
@@ -130,20 +170,23 @@ public void OnPlayerRunCmdPost(int client, int buttons, int impulse,
             {
                 SDKHooks_DropWeapon(client, ghost, ghoster_pos, NULL_VECTOR);
 
-                PrintToChat(client, "%s YOU HAVE DROPPED THE GHOST (Maximum air velocity exceeded.)", PLUGIN_TAG);
+                // Printing maximum velocity as integer, since the decimals are meaninglessly precise in this context.
+                PrintToChat(client, "%s YOU HAVE DROPPED THE GHOST (max air velocity of %d ups exceeded)", PLUGIN_TAG, cMaxAirspeed.IntValue);
             }
             // We had a ghoster userid, and the ghost exists, but that supposed ghoster no longer holds the ghost?
-			// This transfer of ghost ownership should be caught by the OnGhostDrop/OnGhostPickUp global forwards,
-			// so something's gone wrong somewhere if we ever enter this.
+            // This transfer of ghost ownership should be caught by the OnGhostDrop/OnGhostPickUp global forwards,
+            // so something's gone wrong somewhere if we ever enter this.
             else
             {
 #if defined(DEBUG)
-				// This should never happen, but it's recoverable, so we only fail on debug.
+                // This should never happen, but it's recoverable, so we only fail on debug.
                 SetFailState("Ghoster (%d) & ghost entdata mismatch (%d != %d)", client, wep, ghost);
 #endif
-                ResetGhoster(); // no longer reliably know ghoster info - have to reset and give up on this tick
-                return;
+
+                ResetGhoster(); // no longer reliably know ghoster info - have to reset and give up on this cmd
             }
+
+            return;
         }
     }
 
@@ -152,6 +195,12 @@ public void OnPlayerRunCmdPost(int client, int buttons, int impulse,
 
 void ResetGhoster()
 {
+    int prev_client = GetClientOfUserId(_ghost_carrier_userid);
+    if (prev_client != 0)
+    {
+        _prev_cmd_time[prev_client] = 0.0;
+    }
+
     _ghost_carrier_userid = 0;
     _prev_ghoster_pos = NULL_VECTOR;
 }
