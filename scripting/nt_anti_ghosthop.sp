@@ -12,7 +12,7 @@
 Profiler _profiler = null;
 #endif
 
-#define PLUGIN_VERSION "0.6.0"
+#define PLUGIN_VERSION "0.6.1"
 #define PLUGIN_TAG "[ANTI-GHOSTHOP]"
 
 #define NEO_MAXPLAYERS 32
@@ -177,16 +177,10 @@ public void OnPlayerRunCmdPost(int client, int buttons, int impulse,
                 PrintToChat(client, "%s YOU HAVE DROPPED THE GHOST (max air velocity of %.0f ups exceeded)", PLUGIN_TAG, max_vel);
                 PrintToServer("%s YOU HAVE DROPPED THE GHOST (max air velocity of %.0f ups exceeded)", PLUGIN_TAG, max_vel);
             }
-            // We had a ghoster userid, and the ghost exists, but that supposed ghoster no longer holds the ghost?
-            // This transfer of ghost ownership should be caught by the OnGhostDrop/OnGhostPickUp global forwards,
-            // so something's gone wrong somewhere if we ever enter this.
+            // We had a ghoster userid, and the ghost exists, but that supposed ghoster no longer holds the ghost.
+			// This can happen if the ghoster is ghost hopping exactly as the round ends and the ghost de-spawns.
             else
             {
-#if defined(DEBUG)
-                // This should never happen, but it's recoverable, so we only fail on debug.
-                SetFailState("Ghoster (%d) & ghost entdata mismatch (%d != %d)", client, wep, ghost);
-#endif
-
                 ResetGhoster(); // no longer reliably know ghoster info - have to reset and give up on this cmd
             }
 
