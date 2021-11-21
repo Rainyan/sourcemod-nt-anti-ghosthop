@@ -4,6 +4,8 @@
 
 #include <neotokyo>
 
+// Compile flags for plugin debugging.
+// Not recommended on release for performance reasons.
 //#define DEBUG
 //#define DEBUG_PROFILE
 
