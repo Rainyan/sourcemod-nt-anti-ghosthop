@@ -12,10 +12,15 @@
 Profiler _profiler = null;
 #endif
 
-#define PLUGIN_VERSION "0.5.0"
+#define PLUGIN_VERSION "0.6.0"
 #define PLUGIN_TAG "[ANTI-GHOSTHOP]"
 
 #define NEO_MAXPLAYERS 32
+
+// Class specific max ghost carrier land speeds (w/ 8 degree "wall hug" boost)
+#define MAX_SPEED_RECON 255.47
+#define MAX_SPEED_ASSAULT 204.38
+#define MAX_SPEED_SUPPORT 153.28
 
 // Caching this stuff because we're potentially using it on each tick
 static int _ghost_carrier_userid;
@@ -23,8 +28,6 @@ static int _last_ghost; // ent ref
 static int _playerprop_weps_offset;
 static float _prev_ghoster_pos[3];
 static float _prev_cmd_time[NEO_MAXPLAYERS + 1];
-
-ConVar cMaxAirspeed = null;
 
 public Plugin myinfo = {
     name = "NT Anti Ghosthop",
@@ -42,10 +45,6 @@ public void OnPluginStart()
 
     CreateConVar("sm_nt_anti_ghosthop_version", PLUGIN_VERSION,
         "NT Anti Ghosthop plugin version", FCVAR_SPONLY  | FCVAR_REPLICATED | FCVAR_NOTIFY);
-
-    // 344.56 is the fastest recon (knife/pistol) run speed with an 8 degree wallrun boost.
-    cMaxAirspeed = CreateConVar("sm_nt_anti_ghosthop_max_airspeed", "344.56",
-        "Maximum allowed ghoster air speed.", _, true, 0.0);
 
     _playerprop_weps_offset = FindSendPropInfo("CBasePlayer", "m_hMyWeapons");
     if (_playerprop_weps_offset <= 0)
@@ -155,7 +154,11 @@ public void OnPlayerRunCmdPost(int client, int buttons, int impulse,
         PrintToServer("Profiler (OnPlayerRunCmdPost): %f", _profiler.Time);
 #endif
 
-        if (lateral_air_velocity > cMaxAirspeed.FloatValue)
+        int class = GetPlayerClass(client);
+        float max_vel = (class == CLASS_RECON) ? MAX_SPEED_RECON
+            : (class == CLASS_ASSAULT) ? MAX_SPEED_ASSAULT : MAX_SPEED_SUPPORT;
+
+        if (lateral_air_velocity > max_vel)
         {
             int ghost = EntRefToEntIndex(_last_ghost);
             // We had a ghoster userid but the ghost itself no longer exists for whatever reason.
@@ -171,7 +174,8 @@ public void OnPlayerRunCmdPost(int client, int buttons, int impulse,
                 SDKHooks_DropWeapon(client, ghost, ghoster_pos, NULL_VECTOR);
 
                 // Printing maximum velocity as integer, since the decimals are meaninglessly precise in this context.
-                PrintToChat(client, "%s YOU HAVE DROPPED THE GHOST (max air velocity of %d ups exceeded)", PLUGIN_TAG, cMaxAirspeed.IntValue);
+                PrintToChat(client, "%s YOU HAVE DROPPED THE GHOST (max air velocity of %.0f ups exceeded)", PLUGIN_TAG, max_vel);
+                PrintToServer("%s YOU HAVE DROPPED THE GHOST (max air velocity of %.0f ups exceeded)", PLUGIN_TAG, max_vel);
             }
             // We had a ghoster userid, and the ghost exists, but that supposed ghoster no longer holds the ghost?
             // This transfer of ghost ownership should be caught by the OnGhostDrop/OnGhostPickUp global forwards,
