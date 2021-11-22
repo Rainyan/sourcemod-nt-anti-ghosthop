@@ -177,7 +177,6 @@ public void OnPlayerRunCmdPost(int client, int buttons, int impulse,
 
                 // Printing maximum velocity as integer, since the decimals are meaninglessly precise in this context.
                 PrintToChat(client, "%s YOU HAVE DROPPED THE GHOST (max air velocity of %.0f ups exceeded)", PLUGIN_TAG, max_vel);
-                PrintToServer("%s YOU HAVE DROPPED THE GHOST (max air velocity of %.0f ups exceeded)", PLUGIN_TAG, max_vel);
             }
             // We had a ghoster userid, and the ghost exists, but that supposed ghoster no longer holds the ghost.
 			// This can happen if the ghoster is ghost hopping exactly as the round ends and the ghost de-spawns.
