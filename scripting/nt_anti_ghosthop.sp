@@ -184,10 +184,10 @@ public void OnPlayerRunCmdPost(int client, int buttons, int impulse,
         _profiler.Start();
 #endif
 
-            float base_subtratend = (class == CLASS_RECON) ? GRACE_PERIOD_BASE_SUBTRAHEND_RECON
+            float base_subtrahend = (class == CLASS_RECON) ? GRACE_PERIOD_BASE_SUBTRAHEND_RECON
                 : (class == CLASS_ASSAULT) ? GRACE_PERIOD_BASE_SUBTRAHEND_ASSAULT : GRACE_PERIOD_BASE_SUBTRAHEND_SUPPORT;
 
-            GracePeriodEnum gp = PollGracePeriod(lateral_air_velocity, max_vel, base_subtratend);
+            GracePeriodEnum gp = PollGracePeriod(lateral_air_velocity, max_vel, base_subtrahend);
 
 #if defined(DEBUG_PROFILE)
         _profiler.Stop();
@@ -248,10 +248,10 @@ void ResetGhoster()
 }
 
 // Updates grace period, and returns current grace status.
-GracePeriodEnum PollGracePeriod(float vel, float max_vel, float base_subtratend)
+GracePeriodEnum PollGracePeriod(float vel, float max_vel, float base_subtrahend)
 {
     bool first_warning = (_grace_period == DEFAULT_GRACE_PERIOD);
-    float subtrahend = base_subtratend * (vel / max_vel);
+    float subtrahend = base_subtrahend * (vel / max_vel);
     _grace_period -= subtrahend;
     return (_grace_period > 0) ? first_warning ? FIRST_WARNING : STILL_TOO_FAST : PENALIZE;
 }
