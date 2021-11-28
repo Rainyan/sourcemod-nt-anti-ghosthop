@@ -14,7 +14,7 @@
 Profiler _profiler = null;
 #endif
 
-#define PLUGIN_VERSION "0.7.0"
+#define PLUGIN_VERSION "0.7.1"
 #define PLUGIN_TAG "[ANTI-GHOSTHOP]"
 
 #define NEO_MAXPLAYERS 32
@@ -250,6 +250,12 @@ void ResetGhoster()
 // Updates grace period, and returns current grace status.
 GracePeriodEnum PollGracePeriod(float vel, float max_vel, float base_subtrahend)
 {
+#if defined(DEBUG)
+    if (max_vel == 0)
+    {
+        SetFailState("Division by zero"); // should never happen
+    }
+#endif
     bool first_warning = (_grace_period == DEFAULT_GRACE_PERIOD);
     float subtrahend = base_subtrahend * (vel / max_vel);
     _grace_period -= subtrahend;
