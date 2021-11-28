@@ -14,7 +14,7 @@
 Profiler _profiler = null;
 #endif
 
-#define PLUGIN_VERSION "0.6.1"
+#define PLUGIN_VERSION "0.7.0"
 #define PLUGIN_TAG "[ANTI-GHOSTHOP]"
 
 #define NEO_MAXPLAYERS 32
@@ -24,12 +24,30 @@ Profiler _profiler = null;
 #define MAX_SPEED_ASSAULT 204.38
 #define MAX_SPEED_SUPPORT 153.28
 
+// "Grace period" is the buffer during which slight ghost-hopping is tolerated.
+// This buffer is used to avoid unintentional & confusing immediate ghost drops
+// that can happen when the initial ghost pickup happens at high speed impulse,
+// such as strafe-jumping on the ghost.
+#define DEFAULT_GRACE_PERIOD 100.0
+// 0.08 is the magic number that felt correct for supports.
+// Assault and recon numbers are scaled up from it based on their speed difference.
+#define GRACE_PERIOD_BASE_SUBTRAHEND_SUPPORT 0.08
+#define GRACE_PERIOD_BASE_SUBTRAHEND_ASSAULT 0.08 * (MAX_SPEED_ASSAULT / MAX_SPEED_SUPPORT)
+#define GRACE_PERIOD_BASE_SUBTRAHEND_RECON 0.08 * (MAX_SPEED_RECON / MAX_SPEED_SUPPORT)
+
+enum GracePeriodEnum {
+    FIRST_WARNING, // Only warn once about going too fast
+    STILL_TOO_FAST, // Then, tolerate overspeed until we consume the grace period
+    PENALIZE // ...And finally penalize by forcing ghost drop
+}
+
 // Caching this stuff because we're potentially using it on each tick
 static int _ghost_carrier_userid;
 static int _last_ghost; // ent ref
 static int _playerprop_weps_offset;
 static float _prev_ghoster_pos[3];
 static float _prev_cmd_time[NEO_MAXPLAYERS + 1];
+static float _grace_period = DEFAULT_GRACE_PERIOD;
 
 public Plugin myinfo = {
     name = "NT Anti Ghosthop",
@@ -153,7 +171,7 @@ public void OnPlayerRunCmdPost(int client, int buttons, int impulse,
 
 #if defined(DEBUG_PROFILE)
         _profiler.Stop();
-        PrintToServer("Profiler (OnPlayerRunCmdPost): %f", _profiler.Time);
+        PrintToServer("Profiler (OnPlayerRunCmdPost :: Vector maths): %f", _profiler.Time);
 #endif
 
         int class = GetPlayerClass(client);
@@ -162,6 +180,30 @@ public void OnPlayerRunCmdPost(int client, int buttons, int impulse,
 
         if (lateral_air_velocity > max_vel)
         {
+#if defined(DEBUG_PROFILE)
+        _profiler.Start();
+#endif
+
+            float base_subtratend = (class == CLASS_RECON) ? GRACE_PERIOD_BASE_SUBTRAHEND_RECON
+                : (class == CLASS_ASSAULT) ? GRACE_PERIOD_BASE_SUBTRAHEND_ASSAULT : GRACE_PERIOD_BASE_SUBTRAHEND_SUPPORT;
+
+            GracePeriodEnum gp = PollGracePeriod(lateral_air_velocity, max_vel, base_subtratend);
+
+#if defined(DEBUG_PROFILE)
+        _profiler.Stop();
+        PrintToServer("Profiler (OnPlayerRunCmdPost :: Grace period): %f", _profiler.Time);
+#endif
+
+            if (gp == STILL_TOO_FAST)
+            {
+                return;
+            }
+            else if (gp == FIRST_WARNING)
+            {
+                PrintToChat(client, "%s Jumping too fast – please slow down to avoid ghost drop", PLUGIN_TAG);
+                return;
+            }
+
             int ghost = EntRefToEntIndex(_last_ghost);
             // We had a ghoster userid but the ghost itself no longer exists for whatever reason.
             if (ghost == 0 || ghost == INVALID_ENT_REFERENCE)
@@ -176,10 +218,10 @@ public void OnPlayerRunCmdPost(int client, int buttons, int impulse,
                 SDKHooks_DropWeapon(client, ghost, ghoster_pos, NULL_VECTOR);
 
                 // Printing maximum velocity as integer, since the decimals are meaninglessly precise in this context.
-                PrintToChat(client, "%s YOU HAVE DROPPED THE GHOST (max air velocity of %.0f ups exceeded)", PLUGIN_TAG, max_vel);
+                PrintToChat(client, "%s You have dropped the ghost (jumping faster than ghost carry speed)", PLUGIN_TAG);
             }
             // We had a ghoster userid, and the ghost exists, but that supposed ghoster no longer holds the ghost.
-			// This can happen if the ghoster is ghost hopping exactly as the round ends and the ghost de-spawns.
+            // This can happen if the ghoster is ghost hopping exactly as the round ends and the ghost de-spawns.
             else
             {
                 ResetGhoster(); // no longer reliably know ghoster info - have to reset and give up on this cmd
@@ -202,4 +244,19 @@ void ResetGhoster()
 
     _ghost_carrier_userid = 0;
     _prev_ghoster_pos = NULL_VECTOR;
+    ResetGracePeriod();
+}
+
+// Updates grace period, and returns current grace status.
+GracePeriodEnum PollGracePeriod(float vel, float max_vel, float base_subtratend)
+{
+    bool first_warning = (_grace_period == DEFAULT_GRACE_PERIOD);
+    float subtrahend = base_subtratend * (vel / max_vel);
+    _grace_period -= subtrahend;
+    return (_grace_period > 0) ? first_warning ? FIRST_WARNING : STILL_TOO_FAST : PENALIZE;
+}
+
+void ResetGracePeriod()
+{
+    _grace_period = DEFAULT_GRACE_PERIOD;
 }
