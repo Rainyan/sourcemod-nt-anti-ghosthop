@@ -26,7 +26,7 @@ Profiler _profiler = null;
 
 // "Grace period" is the buffer during which slight ghost-hopping is tolerated.
 // This buffer is used to avoid unintentional & confusing immediate ghost drops
-// that can happen when the initial ghost pickup happens at high speed impulse,
+// that can happen when the initial ghost pickup happens at a high speed impulse,
 // such as strafe-jumping on the ghost.
 #define DEFAULT_GRACE_PERIOD 100.0
 // 0.08 is the magic number that felt correct for supports.
