@@ -3,6 +3,8 @@ SourceMod plugin for Neotokyo. Forces you to drop the ghost if going too fast mi
 
 https://user-images.githubusercontent.com/6595066/139524476-7a089902-74a4-49ce-bfe6-f721eb7ad004.mp4
 
+_(**Note**: Some of the details in this document have become outdated as the plugin evolves; see latest developments in the ww22 branch of this repo.)_
+
 ## Some background
 NT has a max speed limitation for the ghost carrier to make rushy quick capping less effective.
 However, players could circumvent this limitation by bhopping and/or using the recon AUX jump (dubbed "*ghost hopping*").
