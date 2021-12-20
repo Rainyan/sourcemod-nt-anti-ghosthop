@@ -14,7 +14,7 @@
 Profiler _profiler = null;
 #endif
 
-#define PLUGIN_VERSION "0.8.0"
+#define PLUGIN_VERSION "0.9.0"
 #define PLUGIN_TAG "[ANTI-GHOSTHOP]"
 
 #define NEO_MAXPLAYERS 32
@@ -34,6 +34,8 @@ Profiler _profiler = null;
 #define GRACE_PERIOD_BASE_SUBTRAHEND_SUPPORT 0.08
 #define GRACE_PERIOD_BASE_SUBTRAHEND_ASSAULT (0.08 * (MAX_SPEED_ASSAULT / MAX_SPEED_SUPPORT))
 #define GRACE_PERIOD_BASE_SUBTRAHEND_RECON (0.08 * (MAX_SPEED_RECON / MAX_SPEED_SUPPORT))
+// How many seconds of no ghost-jumping at all is required to reset the grace period.
+#define GRACE_PERIOD_RESET_COOLDOWN 1.0
 
 enum GracePeriodEnum {
     FIRST_WARNING, // Only warn once about going too fast
@@ -47,6 +49,8 @@ static int _last_ghost; // ent ref
 static float _prev_ghoster_pos[3];
 static float _prev_cmd_time[NEO_MAXPLAYERS + 1];
 static float _grace_period = DEFAULT_GRACE_PERIOD;
+// Handle for tracking the grace period reset timer
+static Handle _timer_reset_gp = INVALID_HANDLE;
 
 public Plugin myinfo = {
     name = "NT Anti Ghosthop",
@@ -165,15 +169,25 @@ public void OnPlayerRunCmdPost(int client, int buttons, int impulse,
     GetClientAbsOrigin(client, ghoster_pos);
 
     // Don't need to do any anti-ghosthop checks if we aren't airborne.
-    if (!(GetEntityFlags(client) & FL_ONGROUND) &&
-        // We need to have a previous known position to calculate velocity.
-        !IsNullVector(_prev_ghoster_pos))
+    if (GetEntityFlags(client) & FL_ONGROUND)
+    {
+        // A timer for restoring the grace period after settling down
+        if (_timer_reset_gp == INVALID_HANDLE && _grace_period < DEFAULT_GRACE_PERIOD)
+        {
+            _timer_reset_gp = CreateTimer(GRACE_PERIOD_RESET_COOLDOWN, Timer_ResetGp, _ghost_carrier_userid, TIMER_FLAG_NO_MAPCHANGE);
+        }
+    }
+    // We need to have a previous known position to calculate velocity.
+    else if (!IsNullVector(_prev_ghoster_pos))
     {
         // Ignore ladders
         if (GetEntityMoveType(client) == MOVETYPE_LADDER)
         {
             return;
         }
+
+        // Client can't restore their grace period whilst jumping
+        CancelGracePeriodRestoreTimer();
 
 #if defined(DEBUG_PROFILE)
         _profiler.Start();
@@ -205,9 +219,9 @@ public void OnPlayerRunCmdPost(int client, int buttons, int impulse,
         PrintToServer("Profiler (OnPlayerRunCmdPost :: Vector maths): %f", _profiler.Time);
 #endif
 
-        int class = GetPlayerClass(client);
-        float max_vel = (class == CLASS_RECON) ? MAX_SPEED_RECON
-            : (class == CLASS_ASSAULT) ? MAX_SPEED_ASSAULT : MAX_SPEED_SUPPORT;
+        int player_class = GetPlayerClass(client);
+        float max_vel = (player_class == CLASS_RECON) ? MAX_SPEED_RECON
+            : (player_class == CLASS_ASSAULT) ? MAX_SPEED_ASSAULT : MAX_SPEED_SUPPORT;
 
         if (lateral_air_velocity > max_vel)
         {
@@ -215,10 +229,10 @@ public void OnPlayerRunCmdPost(int client, int buttons, int impulse,
         _profiler.Start();
 #endif
 
-            float base_subtrahend = (class == CLASS_RECON) ? GRACE_PERIOD_BASE_SUBTRAHEND_RECON
-                : (class == CLASS_ASSAULT) ? GRACE_PERIOD_BASE_SUBTRAHEND_ASSAULT : GRACE_PERIOD_BASE_SUBTRAHEND_SUPPORT;
+            float base_subtrahend = (player_class == CLASS_RECON) ? GRACE_PERIOD_BASE_SUBTRAHEND_RECON
+                : (player_class == CLASS_ASSAULT) ? GRACE_PERIOD_BASE_SUBTRAHEND_ASSAULT : GRACE_PERIOD_BASE_SUBTRAHEND_SUPPORT;
 
-            GracePeriodEnum gp = PollGracePeriod(lateral_air_velocity, max_vel, base_subtrahend, class);
+            GracePeriodEnum gp = PollGracePeriod(lateral_air_velocity, max_vel, base_subtrahend, player_class);
 
 #if defined(DEBUG_PROFILE)
         _profiler.Stop();
@@ -274,8 +288,28 @@ public void OnPlayerRunCmdPost(int client, int buttons, int impulse,
     _prev_ghoster_pos = ghoster_pos;
 }
 
+public Action Timer_ResetGp(Handle timer, int userid)
+{
+    if (userid == _ghost_carrier_userid)
+    {
+        ResetGracePeriod();
+    }
+    _timer_reset_gp = INVALID_HANDLE;
+    return Plugin_Stop;
+}
+
+void CancelGracePeriodRestoreTimer()
+{
+    if (_timer_reset_gp != INVALID_HANDLE)
+    {
+        CloseHandle(_timer_reset_gp);
+        _timer_reset_gp = INVALID_HANDLE;
+    }
+}
+
 void ResetGhoster()
 {
+    CancelGracePeriodRestoreTimer();
     _prev_cmd_time[GetClientOfUserId(_ghost_carrier_userid)] = 0.0;
     _ghost_carrier_userid = 0;
     _prev_ghoster_pos = NULL_VECTOR;
@@ -283,7 +317,7 @@ void ResetGhoster()
 }
 
 // Updates grace period, and returns current grace status.
-GracePeriodEnum PollGracePeriod(float vel, float max_vel, float base_subtrahend, int class)
+GracePeriodEnum PollGracePeriod(float vel, float max_vel, float base_subtrahend, int player_class)
 {
 #if defined(DEBUG)
     // the 'should never happen's
@@ -312,8 +346,8 @@ GracePeriodEnum PollGracePeriod(float vel, float max_vel, float base_subtrahend,
     {
         return PENALIZE;
     }
-    // Need manual adjustment for supports warning because they lack sprinting
-    if (_grace_period <= (class == CLASS_SUPPORT ? (DEFAULT_GRACE_PERIOD * 0.5) : DEFAULT_GRACE_PERIOD))
+    // Need manual adjustment for supports' warnings because they lack sprinting
+    if (_grace_period <= (player_class == CLASS_SUPPORT ? (DEFAULT_GRACE_PERIOD * 0.5) : DEFAULT_GRACE_PERIOD))
     {
         if (!has_seen_first_warning)
         {
