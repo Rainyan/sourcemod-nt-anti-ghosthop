@@ -14,7 +14,7 @@
 Profiler _profiler = null;
 #endif
 
-#define PLUGIN_VERSION "0.7.2"
+#define PLUGIN_VERSION "0.8.0"
 #define PLUGIN_TAG "[ANTI-GHOSTHOP]"
 
 #define NEO_MAXPLAYERS 32
@@ -32,8 +32,8 @@ Profiler _profiler = null;
 // 0.08 is the magic number that felt correct for supports.
 // Assault and recon numbers are scaled up from it based on their speed difference.
 #define GRACE_PERIOD_BASE_SUBTRAHEND_SUPPORT 0.08
-#define GRACE_PERIOD_BASE_SUBTRAHEND_ASSAULT 0.08 * (MAX_SPEED_ASSAULT / MAX_SPEED_SUPPORT)
-#define GRACE_PERIOD_BASE_SUBTRAHEND_RECON 0.08 * (MAX_SPEED_RECON / MAX_SPEED_SUPPORT)
+#define GRACE_PERIOD_BASE_SUBTRAHEND_ASSAULT (0.08 * (MAX_SPEED_ASSAULT / MAX_SPEED_SUPPORT))
+#define GRACE_PERIOD_BASE_SUBTRAHEND_RECON (0.08 * (MAX_SPEED_RECON / MAX_SPEED_SUPPORT))
 
 enum GracePeriodEnum {
     FIRST_WARNING, // Only warn once about going too fast
@@ -44,7 +44,6 @@ enum GracePeriodEnum {
 // Caching this stuff because we're potentially using it on each tick
 static int _ghost_carrier_userid;
 static int _last_ghost; // ent ref
-static int _playerprop_weps_offset;
 static float _prev_ghoster_pos[3];
 static float _prev_cmd_time[NEO_MAXPLAYERS + 1];
 static float _grace_period = DEFAULT_GRACE_PERIOD;
@@ -66,11 +65,33 @@ public void OnPluginStart()
     CreateConVar("sm_nt_anti_ghosthop_version", PLUGIN_VERSION,
         "NT Anti Ghosthop plugin version", FCVAR_SPONLY  | FCVAR_REPLICATED | FCVAR_NOTIFY);
 
-    _playerprop_weps_offset = FindSendPropInfo("CBasePlayer", "m_hMyWeapons");
-    if (_playerprop_weps_offset <= 0)
+#if defined(DEBUG)
+    // We track ghost by listening to its custom global spawn forward,
+    // so in debug mode just manually look it up instead, so that we can
+    // repeatedly reload this plugin mid-level without hassle.
+    char ename[12 + 1];
+    for (int e = MaxClients + 1; e <= GetMaxEntities(); ++e)
     {
-        SetFailState("Failed to find required network prop offset");
+        if (!IsValidEdict(e))
+        {
+            continue;
+        }
+        if (!GetEdictClassname(e, ename, sizeof(ename)))
+        {
+            continue;
+        }
+        if (StrEqual(ename, "weapon_ghost"))
+        {
+            _last_ghost = EntIndexToEntRef(e);
+            if (EntRefToEntIndex(_last_ghost) == INVALID_ENT_REFERENCE)
+            {
+                SetFailState("Failed to retrieve entref for %d", e);
+            }
+            PrintToServer("%s DEBUG :: Assigned _last_ghost manually", PLUGIN_TAG);
+            break;
+        }
     }
+#endif
 }
 
 public void OnAllPluginsLoaded()
@@ -96,26 +117,30 @@ public void OnClientDisconnect(int client)
     _prev_cmd_time[client] = 0.0;
 }
 
-public void OnGhostCapture(int client)
+public Action OnGhostCapture(int client)
 {
     ResetGhoster();
+    return Plugin_Continue;
 }
 
-public void OnGhostDrop(int client)
+public Action OnGhostDrop(int client)
 {
     ResetGhoster();
+    return Plugin_Continue;
 }
 
-public void OnGhostPickUp(int client)
+public Action OnGhostPickUp(int client)
 {
     ResetGhoster();
     _ghost_carrier_userid = GetClientUserId(client);
+    return Plugin_Continue;
 }
 
-public void OnGhostSpawn(int ghost_ref)
+public Action OnGhostSpawn(int ghost_ref)
 {
     _last_ghost = ghost_ref;
     ResetGhoster();
+    return Plugin_Continue;
 }
 
 public void OnPlayerRunCmdPost(int client, int buttons, int impulse,
@@ -144,11 +169,11 @@ public void OnPlayerRunCmdPost(int client, int buttons, int impulse,
         // We need to have a previous known position to calculate velocity.
         !IsNullVector(_prev_ghoster_pos))
     {
-		// Ignore ladders
-		if (GetEntityMoveType(client) == MOVETYPE_LADDER)
-		{
-			return;
-		}
+        // Ignore ladders
+        if (GetEntityMoveType(client) == MOVETYPE_LADDER)
+        {
+            return;
+        }
 
 #if defined(DEBUG_PROFILE)
         _profiler.Start();
@@ -193,7 +218,7 @@ public void OnPlayerRunCmdPost(int client, int buttons, int impulse,
             float base_subtrahend = (class == CLASS_RECON) ? GRACE_PERIOD_BASE_SUBTRAHEND_RECON
                 : (class == CLASS_ASSAULT) ? GRACE_PERIOD_BASE_SUBTRAHEND_ASSAULT : GRACE_PERIOD_BASE_SUBTRAHEND_SUPPORT;
 
-            GracePeriodEnum gp = PollGracePeriod(lateral_air_velocity, max_vel, base_subtrahend);
+            GracePeriodEnum gp = PollGracePeriod(lateral_air_velocity, max_vel, base_subtrahend, class);
 
 #if defined(DEBUG_PROFILE)
         _profiler.Stop();
@@ -218,8 +243,16 @@ public void OnPlayerRunCmdPost(int client, int buttons, int impulse,
                 return;
             }
 
-            int wep = GetEntDataEnt2(client, _playerprop_weps_offset);
-            if (wep == ghost)
+#if defined(DEBUG_PROFILE)
+        _profiler.Start();
+#endif
+            int wep = GetEntPropEnt(client, Prop_Data, "m_hMyWeapons");
+#if defined(DEBUG_PROFILE)
+        _profiler.Stop();
+        PrintToServer("Profiler (OnPlayerRunCmdPost :: GetEntPropEnt): %f", _profiler.Time);
+#endif
+
+            if (wep != -1 && wep == ghost)
             {
                 SDKHooks_DropWeapon(client, ghost, ghoster_pos, NULL_VECTOR);
 
@@ -228,6 +261,7 @@ public void OnPlayerRunCmdPost(int client, int buttons, int impulse,
             }
             // We had a ghoster userid, and the ghost exists, but that supposed ghoster no longer holds the ghost.
             // This can happen if the ghoster is ghost hopping exactly as the round ends and the ghost de-spawns.
+            // Can also happen on the tick after we already forced a ghost drop, until our entdata updates.
             else
             {
                 ResetGhoster(); // no longer reliably know ghoster info - have to reset and give up on this cmd
@@ -242,30 +276,53 @@ public void OnPlayerRunCmdPost(int client, int buttons, int impulse,
 
 void ResetGhoster()
 {
-    int prev_client = GetClientOfUserId(_ghost_carrier_userid);
-    if (prev_client != 0)
-    {
-        _prev_cmd_time[prev_client] = 0.0;
-    }
-
+    _prev_cmd_time[GetClientOfUserId(_ghost_carrier_userid)] = 0.0;
     _ghost_carrier_userid = 0;
     _prev_ghoster_pos = NULL_VECTOR;
     ResetGracePeriod();
 }
 
 // Updates grace period, and returns current grace status.
-GracePeriodEnum PollGracePeriod(float vel, float max_vel, float base_subtrahend)
+GracePeriodEnum PollGracePeriod(float vel, float max_vel, float base_subtrahend, int class)
 {
 #if defined(DEBUG)
+    // the 'should never happen's
     if (max_vel == 0)
     {
-        SetFailState("Division by zero"); // should never happen
+        SetFailState("Division by zero");
+    }
+    if (_grace_period > DEFAULT_GRACE_PERIOD)
+    {
+        SetFailState("_grace_period > DEFAULT_GRACE_PERIOD")
     }
 #endif
-    bool first_warning = (_grace_period == DEFAULT_GRACE_PERIOD);
+
+    bool initial_state = (_grace_period == DEFAULT_GRACE_PERIOD);
+    static bool has_seen_first_warning;
+    if (initial_state)
+    {
+        has_seen_first_warning = false;
+    }
+
     float subtrahend = base_subtrahend * (vel / max_vel);
     _grace_period -= subtrahend;
-    return (_grace_period > 0) ? first_warning ? FIRST_WARNING : STILL_TOO_FAST : PENALIZE;
+
+    // Regardless of other factors, instantly penalize if crossed the limit
+    if (_grace_period <= 0)
+    {
+        return PENALIZE;
+    }
+    // Need manual adjustment for supports warning because they lack sprinting
+    if (_grace_period <= (class == CLASS_SUPPORT ? (DEFAULT_GRACE_PERIOD * 0.5) : DEFAULT_GRACE_PERIOD))
+    {
+        if (!has_seen_first_warning)
+        {
+            has_seen_first_warning = true;
+            return FIRST_WARNING;
+        }
+    }
+
+    return STILL_TOO_FAST;
 }
 
 void ResetGracePeriod()
