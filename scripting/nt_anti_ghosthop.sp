@@ -226,7 +226,7 @@ public void OnPlayerRunCmdPost(int client, int buttons, int impulse,
         if (lateral_air_velocity > max_vel)
         {
 #if defined(DEBUG_PROFILE)
-        _profiler.Start();
+            _profiler.Start();
 #endif
 
             float base_subtrahend = (player_class == CLASS_RECON) ? GRACE_PERIOD_BASE_SUBTRAHEND_RECON
@@ -235,8 +235,8 @@ public void OnPlayerRunCmdPost(int client, int buttons, int impulse,
             GracePeriodEnum gp = PollGracePeriod(lateral_air_velocity, max_vel, base_subtrahend, player_class);
 
 #if defined(DEBUG_PROFILE)
-        _profiler.Stop();
-        PrintToServer("Profiler (OnPlayerRunCmdPost :: Grace period): %f", _profiler.Time);
+            _profiler.Stop();
+            PrintToServer("Profiler (OnPlayerRunCmdPost :: Grace period): %f", _profiler.Time);
 #endif
 
             if (gp == STILL_TOO_FAST)
@@ -258,12 +258,12 @@ public void OnPlayerRunCmdPost(int client, int buttons, int impulse,
             }
 
 #if defined(DEBUG_PROFILE)
-        _profiler.Start();
+            _profiler.Start();
 #endif
             int wep = GetEntPropEnt(client, Prop_Data, "m_hMyWeapons");
 #if defined(DEBUG_PROFILE)
-        _profiler.Stop();
-        PrintToServer("Profiler (OnPlayerRunCmdPost :: GetEntPropEnt): %f", _profiler.Time);
+            _profiler.Stop();
+            PrintToServer("Profiler (OnPlayerRunCmdPost :: GetEntPropEnt): %f", _profiler.Time);
 #endif
 
             if (wep != -1 && wep == ghost)
