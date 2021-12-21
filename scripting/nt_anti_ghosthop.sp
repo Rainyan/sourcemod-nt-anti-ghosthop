@@ -415,7 +415,7 @@ GracePeriodEnum PollGracePeriod(float lateral_vel, float vertical_vel, float max
     {
         return PENALIZE;
     }
-    // Need manual adjustment for supports' warnings because they lack sprinting
+    // Need manual adjustment for supports' warnings because their lack of sprinting throws off the values otherwise
     if (_grace_period <= ((player_class == CLASS_SUPPORT) ? (DEFAULT_GRACE_PERIOD * 0.625) : DEFAULT_GRACE_PERIOD))
     {
         if (!has_seen_first_warning)
