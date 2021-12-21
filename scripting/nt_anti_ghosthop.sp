@@ -14,7 +14,7 @@
 Profiler _profiler = null;
 #endif
 
-#define PLUGIN_VERSION "0.9.0"
+#define PLUGIN_VERSION "0.10.0"
 #define PLUGIN_TAG "[ANTI-GHOSTHOP]"
 
 #define NEO_MAXPLAYERS 32
@@ -34,12 +34,20 @@ Profiler _profiler = null;
 #define GRACE_PERIOD_BASE_SUBTRAHEND_SUPPORT 0.08
 #define GRACE_PERIOD_BASE_SUBTRAHEND_ASSAULT (0.08 * (MAX_SPEED_ASSAULT / MAX_SPEED_SUPPORT))
 #define GRACE_PERIOD_BASE_SUBTRAHEND_RECON (0.08 * (MAX_SPEED_RECON / MAX_SPEED_SUPPORT))
+
 // How many seconds of no ghost-jumping at all is required to reset the grace period.
-#define GRACE_PERIOD_RESET_COOLDOWN 1.0
+#define GRACE_PERIOD_RESET_MIN_COOLDOWN 0.5
+#define GRACE_PERIOD_RESET_MAX_COOLDOWN 3.0
+#define GRACE_PERIOD_RESET_INCREMENT 0.25
+#define GRACE_PERIOD_DEFAULT_COOLDOWN GRACE_PERIOD_RESET_MIN_COOLDOWN
+
+// The distance, in Hammer units, that we consider as "free falling". Value must be >= zero!
+#define FREEFALL_DISTANCE 300.0
 
 enum GracePeriodEnum {
     FIRST_WARNING, // Only warn once about going too fast
     STILL_TOO_FAST, // Then, tolerate overspeed until we consume the grace period
+    FREEFALLING, // Special case where we may choose to ignore a freefalling ghoster
     PENALIZE // ...And finally penalize by forcing ghost drop
 }
 
@@ -49,8 +57,12 @@ static int _last_ghost; // ent ref
 static float _prev_ghoster_pos[3];
 static float _prev_cmd_time[NEO_MAXPLAYERS + 1];
 static float _grace_period = DEFAULT_GRACE_PERIOD;
+static float _gp_reset_interval = GRACE_PERIOD_RESET_MIN_COOLDOWN;
+static bool _freefalling = false;
 // Handle for tracking the grace period reset timer
 static Handle _timer_reset_gp = INVALID_HANDLE;
+
+static ConVar _cvar_gravity;
 
 public Plugin myinfo = {
     name = "NT Anti Ghosthop",
@@ -68,6 +80,12 @@ public void OnPluginStart()
 
     CreateConVar("sm_nt_anti_ghosthop_version", PLUGIN_VERSION,
         "NT Anti Ghosthop plugin version", FCVAR_SPONLY  | FCVAR_REPLICATED | FCVAR_NOTIFY);
+
+    _cvar_gravity = FindConVar("sv_gravity");
+    if (_cvar_gravity == null)
+    {
+        SetFailState("Could not find sv_gravity");
+    }
 
 #if defined(DEBUG)
     // We track ghost by listening to its custom global spawn forward,
@@ -96,6 +114,8 @@ public void OnPluginStart()
         }
     }
 #endif
+
+    CreateTimer(5.0, Timer_RecoverGraceInterval, _, TIMER_REPEAT);
 }
 
 public void OnAllPluginsLoaded()
@@ -171,10 +191,13 @@ public void OnPlayerRunCmdPost(int client, int buttons, int impulse,
     // Don't need to do any anti-ghosthop checks if we aren't airborne.
     if (GetEntityFlags(client) & FL_ONGROUND)
     {
+        _freefalling = false;
+
         // A timer for restoring the grace period after settling down
         if (_timer_reset_gp == INVALID_HANDLE && _grace_period < DEFAULT_GRACE_PERIOD)
         {
-            _timer_reset_gp = CreateTimer(GRACE_PERIOD_RESET_COOLDOWN, Timer_ResetGp, _ghost_carrier_userid, TIMER_FLAG_NO_MAPCHANGE);
+            _timer_reset_gp = CreateTimer(_gp_reset_interval, Timer_ResetGp, _ghost_carrier_userid);
+            IncrementGpResetInterval();
         }
     }
     // We need to have a previous known position to calculate velocity.
@@ -182,6 +205,13 @@ public void OnPlayerRunCmdPost(int client, int buttons, int impulse,
     {
         // Ignore ladders
         if (GetEntityMoveType(client) == MOVETYPE_LADDER)
+        {
+            ResetGracePeriod();
+            _freefalling = false;
+            return;
+        }
+
+        if (_freefalling)
         {
             return;
         }
@@ -195,11 +225,13 @@ public void OnPlayerRunCmdPost(int client, int buttons, int impulse,
 
         float dir[3];
         SubtractVectors(ghoster_pos, _prev_ghoster_pos, dir);
-        // Only interested in lateral movements.
-        // Zeroing the vertical axis prevents false positives on fast
-        // upwards jumps, or when falling.
+
+        // Vertical movement
+        float vert_distance = dir[2] > 0 ? 0.0 : -dir[2];
+
+        // Lateral movement
         dir[2] = 0.0;
-        float distance = GetVectorLength(dir);
+        float lat_distance = GetVectorLength(dir);
 
         float time = GetGameTime();
         float delta_time = time - _prev_cmd_time[client];
@@ -211,8 +243,7 @@ public void OnPlayerRunCmdPost(int client, int buttons, int impulse,
         _prev_cmd_time[client] = time;
 
         // Estimate our current speed in engine units per second.
-        // This is the same unit of velocity that cl_showpos displays.
-        float lateral_air_velocity = distance / delta_time;
+        float lateral_air_velocity = lat_distance / delta_time;
 
 #if defined(DEBUG_PROFILE)
         _profiler.Stop();
@@ -229,10 +260,11 @@ public void OnPlayerRunCmdPost(int client, int buttons, int impulse,
             _profiler.Start();
 #endif
 
+            float vertical_air_velocity = vert_distance / delta_time;
             float base_subtrahend = (player_class == CLASS_RECON) ? GRACE_PERIOD_BASE_SUBTRAHEND_RECON
                 : (player_class == CLASS_ASSAULT) ? GRACE_PERIOD_BASE_SUBTRAHEND_ASSAULT : GRACE_PERIOD_BASE_SUBTRAHEND_SUPPORT;
 
-            GracePeriodEnum gp = PollGracePeriod(lateral_air_velocity, max_vel, base_subtrahend, player_class);
+            GracePeriodEnum gp = PollGracePeriod(lateral_air_velocity, vertical_air_velocity, max_vel, base_subtrahend, player_class);
 
 #if defined(DEBUG_PROFILE)
             _profiler.Stop();
@@ -246,6 +278,11 @@ public void OnPlayerRunCmdPost(int client, int buttons, int impulse,
             else if (gp == FIRST_WARNING)
             {
                 PrintToChat(client, "%s Jumping too fast – please slow down to avoid ghost drop", PLUGIN_TAG);
+                return;
+            }
+            else if (gp == FREEFALLING)
+            {
+                _freefalling = true;
                 return;
             }
 
@@ -294,8 +331,18 @@ public Action Timer_ResetGp(Handle timer, int userid)
     {
         ResetGracePeriod();
     }
+
     _timer_reset_gp = INVALID_HANDLE;
     return Plugin_Stop;
+}
+
+public Action Timer_RecoverGraceInterval(Handle timer)
+{
+    if (_timer_reset_gp == INVALID_HANDLE)
+    {
+        DecrementGpResetInterval();
+    }
+    return Plugin_Continue;
 }
 
 void CancelGracePeriodRestoreTimer()
@@ -314,14 +361,16 @@ void ResetGhoster()
     _ghost_carrier_userid = 0;
     _prev_ghoster_pos = NULL_VECTOR;
     ResetGracePeriod();
+    _gp_reset_interval = GRACE_PERIOD_DEFAULT_COOLDOWN;
+    _freefalling = false;
 }
 
 // Updates grace period, and returns current grace status.
-GracePeriodEnum PollGracePeriod(float vel, float max_vel, float base_subtrahend, int player_class)
+GracePeriodEnum PollGracePeriod(float lateral_vel, float vertical_vel, float max_lateral_vel, float base_subtrahend, int player_class)
 {
 #if defined(DEBUG)
     // the 'should never happen's
-    if (max_vel == 0)
+    if (max_lateral_vel == 0)
     {
         SetFailState("Division by zero");
     }
@@ -331,6 +380,19 @@ GracePeriodEnum PollGracePeriod(float vel, float max_vel, float base_subtrahend,
     }
 #endif
 
+    float freefall_velocity = SquareRoot(2.0 * (_cvar_gravity.FloatValue * _cvar_gravity.FloatValue) * FREEFALL_DISTANCE);
+
+    // Give a free pass to ghosters who are freefalling from a drop higher than
+    // FREEFALL_DISTANCE, as they are likely to do large sweeping air strafes
+    // to correct their fall path, which could well trigger the bhop speed limit.
+    // This check sidesteps the issue with players inadvertently losing ghost
+    // during long falls, such as the nt_rise_ctg roof drop (which is ~600 units
+    // in height, total).
+    if (vertical_vel >= freefall_velocity)
+    {
+        return FREEFALLING;
+    }
+
     bool initial_state = (_grace_period == DEFAULT_GRACE_PERIOD);
     static bool has_seen_first_warning;
     if (initial_state)
@@ -338,7 +400,14 @@ GracePeriodEnum PollGracePeriod(float vel, float max_vel, float base_subtrahend,
         has_seen_first_warning = false;
     }
 
-    float subtrahend = base_subtrahend * (vel / max_vel);
+    float subtrahend = base_subtrahend * (lateral_vel / max_lateral_vel);
+    // Special case for supports because their inheritly slow speed makes the
+    // penalty kick in unreasonably quick otherwise.
+    if (player_class == CLASS_SUPPORT)
+    {
+        subtrahend *= 0.4;
+    }
+
     _grace_period -= subtrahend;
 
     // Regardless of other factors, instantly penalize if crossed the limit
@@ -347,7 +416,7 @@ GracePeriodEnum PollGracePeriod(float vel, float max_vel, float base_subtrahend,
         return PENALIZE;
     }
     // Need manual adjustment for supports' warnings because they lack sprinting
-    if (_grace_period <= (player_class == CLASS_SUPPORT ? (DEFAULT_GRACE_PERIOD * 0.5) : DEFAULT_GRACE_PERIOD))
+    if (_grace_period <= ((player_class == CLASS_SUPPORT) ? (DEFAULT_GRACE_PERIOD * 0.625) : DEFAULT_GRACE_PERIOD))
     {
         if (!has_seen_first_warning)
         {
@@ -362,4 +431,24 @@ GracePeriodEnum PollGracePeriod(float vel, float max_vel, float base_subtrahend,
 void ResetGracePeriod()
 {
     _grace_period = DEFAULT_GRACE_PERIOD;
+}
+
+void IncrementGpResetInterval()
+{
+    _gp_reset_interval = Min(_gp_reset_interval + GRACE_PERIOD_RESET_INCREMENT, GRACE_PERIOD_RESET_MAX_COOLDOWN);
+}
+
+void DecrementGpResetInterval()
+{
+    _gp_reset_interval = Max(_gp_reset_interval - GRACE_PERIOD_RESET_INCREMENT, GRACE_PERIOD_RESET_MIN_COOLDOWN);
+}
+
+stock float Min(float a, float b)
+{
+    return a < b ? a : b;
+}
+
+stock float Max(float a, float b)
+{
+    return a > b ? a : b;
 }
