@@ -385,7 +385,7 @@ GracePeriodEnum PollGracePeriod(float lateral_vel, float vertical_vel, float max
     // Give a free pass to ghosters who are freefalling from a drop higher than
     // FREEFALL_DISTANCE, as they are likely to do large sweeping air strafes
     // to correct their fall path, which could well trigger the bhop speed limit.
-    // This check sidesteps the issue with players inadvertently losing ghost
+    // This check sidesteps such issue of players inadvertently losing ghost
     // during long falls, such as the nt_rise_ctg roof drop (which is ~600 units
     // in height, total).
     if (vertical_vel >= freefall_velocity)
