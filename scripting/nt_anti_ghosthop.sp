@@ -226,7 +226,7 @@ public void OnPlayerRunCmdPost(int client, int buttons, int impulse,
         float dir[3];
         SubtractVectors(ghoster_pos, _prev_ghoster_pos, dir);
 
-        // Vertical movement
+        // Vertical movement. Only want falling motion, so we ignore positive values.
         float vert_distance = dir[2] > 0 ? 0.0 : -dir[2];
 
         // Lateral movement
