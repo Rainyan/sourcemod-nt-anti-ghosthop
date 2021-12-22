@@ -14,7 +14,7 @@
 Profiler _profiler = null;
 #endif
 
-#define PLUGIN_VERSION "0.10.2"
+#define PLUGIN_VERSION "0.10.3"
 #define PLUGIN_TAG "[ANTI-GHOSTHOP]"
 #define NEO_MAXPLAYERS 32
 
@@ -58,6 +58,7 @@ static float _prev_ghoster_pos[3];
 static float _prev_cmd_time[NEO_MAXPLAYERS + 1];
 static float _grace_period = DEFAULT_GRACE_PERIOD;
 static float _gp_reset_interval = GRACE_PERIOD_RESET_MIN_COOLDOWN;
+static float _freefall_velocity;
 static bool _freefalling = false;
 // Handle for tracking the grace period reset timer
 static Handle _timer_reset_gp = INVALID_HANDLE;
@@ -86,6 +87,8 @@ public void OnPluginStart()
     {
         SetFailState("Could not find sv_gravity");
     }
+    _cvar_gravity.AddChangeHook(OnGravityChanged);
+    _freefall_velocity = InstantaneousVelocity(_cvar_gravity.FloatValue, FREEFALL_DISTANCE);
 
 #if defined(DEBUG)
     // We track ghost by listening to its custom global spawn forward,
@@ -139,6 +142,11 @@ public void OnMapEnd()
 public void OnClientDisconnect(int client)
 {
     _prev_cmd_time[client] = 0.0;
+}
+
+public void OnGravityChanged(ConVar convar, const char[] oldValue, const char[] newValue)
+{
+    _freefall_velocity = InstantaneousVelocity(StringToFloat(newValue), FREEFALL_DISTANCE);
 }
 
 public Action OnGhostCapture(int client)
@@ -389,15 +397,13 @@ GracePeriodEnum PollGracePeriod(float lateral_vel, float vertical_vel, float max
     }
 #endif
 
-    float freefall_velocity = SquareRoot(2.0 * (_cvar_gravity.FloatValue * _cvar_gravity.FloatValue) * FREEFALL_DISTANCE);
-
     // Give a free pass to ghosters who are freefalling from a drop higher than
     // FREEFALL_DISTANCE, as they are likely to do large sweeping air strafes
     // to correct their fall path, which could well trigger the bhop speed limit.
     // This check sidesteps such issue of players inadvertently losing ghost
     // during long falls, such as the nt_rise_ctg roof drop (which is ~600 units
     // in height, total).
-    if (vertical_vel >= freefall_velocity)
+    if (vertical_vel >= _freefall_velocity)
     {
         return FREEFALLING;
     }
@@ -450,6 +456,11 @@ void IncrementGpResetInterval()
 void DecrementGpResetInterval()
 {
     _gp_reset_interval = Max(_gp_reset_interval - GRACE_PERIOD_RESET_DECREMENT, GRACE_PERIOD_RESET_MIN_COOLDOWN);
+}
+
+stock float InstantaneousVelocity(float gravity, float distance)
+{
+    return SquareRoot(2.0 * (gravity * gravity) * distance) * (gravity < 0.0 ? -1.0 : 1.0);
 }
 
 stock float Min(float a, float b)
