@@ -14,9 +14,8 @@
 Profiler _profiler = null;
 #endif
 
-#define PLUGIN_VERSION "0.10.0"
+#define PLUGIN_VERSION "0.10.1"
 #define PLUGIN_TAG "[ANTI-GHOSTHOP]"
-
 #define NEO_MAXPLAYERS 32
 
 // Class specific max ghost carrier land speeds (w/ 8 degree "wall hug" boost)
@@ -32,13 +31,14 @@ Profiler _profiler = null;
 // 0.08 is the magic number that felt correct for supports.
 // Assault and recon numbers are scaled up from it based on their speed difference.
 #define GRACE_PERIOD_BASE_SUBTRAHEND_SUPPORT 0.08
-#define GRACE_PERIOD_BASE_SUBTRAHEND_ASSAULT (0.08 * (MAX_SPEED_ASSAULT / MAX_SPEED_SUPPORT))
-#define GRACE_PERIOD_BASE_SUBTRAHEND_RECON (0.08 * (MAX_SPEED_RECON / MAX_SPEED_SUPPORT))
+#define GRACE_PERIOD_BASE_SUBTRAHEND_ASSAULT (GRACE_PERIOD_BASE_SUBTRAHEND_SUPPORT * (MAX_SPEED_ASSAULT / MAX_SPEED_SUPPORT))
+#define GRACE_PERIOD_BASE_SUBTRAHEND_RECON (GRACE_PERIOD_BASE_SUBTRAHEND_SUPPORT * (MAX_SPEED_RECON / MAX_SPEED_SUPPORT))
 
 // How many seconds of no ghost-jumping at all is required to reset the grace period.
 #define GRACE_PERIOD_RESET_MIN_COOLDOWN 0.5
 #define GRACE_PERIOD_RESET_MAX_COOLDOWN 3.0
 #define GRACE_PERIOD_RESET_INCREMENT 0.25
+#define GRACE_PERIOD_RESET_DECREMENT 0.5
 #define GRACE_PERIOD_DEFAULT_COOLDOWN GRACE_PERIOD_RESET_MIN_COOLDOWN
 
 // The distance, in Hammer units, that we consider as "free falling". Value must be >= zero!
@@ -440,7 +440,7 @@ void IncrementGpResetInterval()
 
 void DecrementGpResetInterval()
 {
-    _gp_reset_interval = Max(_gp_reset_interval - GRACE_PERIOD_RESET_INCREMENT, GRACE_PERIOD_RESET_MIN_COOLDOWN);
+    _gp_reset_interval = Max(_gp_reset_interval - GRACE_PERIOD_RESET_DECREMENT, GRACE_PERIOD_RESET_MIN_COOLDOWN);
 }
 
 stock float Min(float a, float b)
