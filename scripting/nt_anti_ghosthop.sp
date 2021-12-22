@@ -14,7 +14,7 @@
 Profiler _profiler = null;
 #endif
 
-#define PLUGIN_VERSION "0.10.3"
+#define PLUGIN_VERSION "0.10.4"
 #define PLUGIN_TAG "[ANTI-GHOSTHOP]"
 #define NEO_MAXPLAYERS 32
 
@@ -243,8 +243,8 @@ public void OnPlayerRunCmdPost(int client, int buttons, int impulse,
         float dir[3];
         SubtractVectors(ghoster_pos, _prev_ghoster_pos, dir);
 
-        // Vertical movement. Only want falling motion, so we ignore positive values.
-        float vert_distance = dir[2] > 0 ? 0.0 : -dir[2];
+        // Vertical movement
+        float vert_distance = dir[2];
 
         // Lateral movement
         dir[2] = 0.0;
@@ -403,7 +403,7 @@ GracePeriodEnum PollGracePeriod(float lateral_vel, float vertical_vel, float max
     // This check sidesteps such issue of players inadvertently losing ghost
     // during long falls, such as the nt_rise_ctg roof drop (which is ~600 units
     // in height, total).
-    if (vertical_vel >= _freefall_velocity)
+    if (vertical_vel <= _freefall_velocity)
     {
         return FREEFALLING;
     }
@@ -458,9 +458,13 @@ void DecrementGpResetInterval()
     _gp_reset_interval = Max(_gp_reset_interval - GRACE_PERIOD_RESET_DECREMENT, GRACE_PERIOD_RESET_MIN_COOLDOWN);
 }
 
-stock float InstantaneousFreeFallVelocity(float gravity, float distance)
+float InstantaneousFreeFallVelocity(float gravity, float distance)
 {
-    return SquareRoot(2.0 * (gravity * gravity) * distance) * (gravity < 0.0 ? -1.0 : 1.0);
+    // This return value is negated because we'll be later comparing it to a vertical 3D velocity component,
+    // where falling motion is discriminated by a negative sign. We also ignore the possibility of negative
+    // gravity in favor of a simpler code path, since comparisons that use this (cached) value may be
+    // running very frequently, possibly 66 times per second.
+    return -SquareRoot(2.0 * (gravity * gravity) * distance);
 }
 
 stock float Min(float a, float b)
