@@ -88,7 +88,7 @@ public void OnPluginStart()
         SetFailState("Could not find sv_gravity");
     }
     _cvar_gravity.AddChangeHook(OnGravityChanged);
-    _freefall_velocity = InstantaneousVelocity(_cvar_gravity.FloatValue, FREEFALL_DISTANCE);
+    _freefall_velocity = InstantaneousFreeFallVelocity(_cvar_gravity.FloatValue, FREEFALL_DISTANCE);
 
 #if defined(DEBUG)
     // We track ghost by listening to its custom global spawn forward,
@@ -146,7 +146,7 @@ public void OnClientDisconnect(int client)
 
 public void OnGravityChanged(ConVar convar, const char[] oldValue, const char[] newValue)
 {
-    _freefall_velocity = InstantaneousVelocity(StringToFloat(newValue), FREEFALL_DISTANCE);
+    _freefall_velocity = InstantaneousFreeFallVelocity(StringToFloat(newValue), FREEFALL_DISTANCE);
 }
 
 public Action OnGhostCapture(int client)
@@ -458,7 +458,7 @@ void DecrementGpResetInterval()
     _gp_reset_interval = Max(_gp_reset_interval - GRACE_PERIOD_RESET_DECREMENT, GRACE_PERIOD_RESET_MIN_COOLDOWN);
 }
 
-stock float InstantaneousVelocity(float gravity, float distance)
+stock float InstantaneousFreeFallVelocity(float gravity, float distance)
 {
     return SquareRoot(2.0 * (gravity * gravity) * distance) * (gravity < 0.0 ? -1.0 : 1.0);
 }
