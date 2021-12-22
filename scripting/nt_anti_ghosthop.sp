@@ -14,7 +14,7 @@
 Profiler _profiler = null;
 #endif
 
-#define PLUGIN_VERSION "0.10.1"
+#define PLUGIN_VERSION "0.10.2"
 #define PLUGIN_TAG "[ANTI-GHOSTHOP]"
 #define NEO_MAXPLAYERS 32
 
@@ -210,6 +210,15 @@ public void OnPlayerRunCmdPost(int client, int buttons, int impulse,
             _freefalling = false;
             return;
         }
+#if defined(DEBUG)
+        // Ignore debug noclip flying
+        else if (GetEntityMoveType(client) == MOVETYPE_NOCLIP)
+        {
+            ResetGracePeriod();
+            _freefalling = true;
+            return;
+        }
+#endif
 
         if (_freefalling)
         {
