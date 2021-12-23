@@ -1,3 +1,5 @@
+#pragma semicolon 1
+
 #include <sourcemod>
 #include <sdkhooks>
 #include <sdktools>
@@ -14,7 +16,7 @@
 Profiler _profiler = null;
 #endif
 
-#define PLUGIN_VERSION "0.10.4"
+#define PLUGIN_VERSION "0.10.5"
 #define PLUGIN_TAG "[ANTI-GHOSTHOP]"
 #define NEO_MAXPLAYERS 32
 
@@ -49,7 +51,7 @@ enum GracePeriodEnum {
     STILL_TOO_FAST, // Then, tolerate overspeed until we consume the grace period
     FREEFALLING, // Special case where we may choose to ignore a freefalling ghoster
     PENALIZE // ...And finally penalize by forcing ghost drop
-}
+};
 
 // Caching this stuff because we're potentially using it on each tick
 static int _ghost_carrier_userid;
