@@ -16,7 +16,7 @@
 Profiler _profiler = null;
 #endif
 
-#define PLUGIN_VERSION "0.10.5"
+#define PLUGIN_VERSION "0.11.0"
 #define PLUGIN_TAG "[ANTI-GHOSTHOP]"
 #define NEO_MAXPLAYERS 32
 
@@ -211,7 +211,7 @@ public void OnPlayerRunCmdPost(int client, int buttons, int impulse,
         }
     }
     // We need to have a previous known position to calculate velocity.
-    else if (!IsNullVector(_prev_ghoster_pos))
+    else if (!VectorsEqual(_prev_ghoster_pos, NULL_VECTOR))
     {
         // Ignore ladders
         if (GetEntityMoveType(client) == MOVETYPE_LADDER)
@@ -477,4 +477,19 @@ stock float Min(float a, float b)
 stock float Max(float a, float b)
 {
     return a > b ? a : b;
+}
+
+stock bool VectorsEqual(const float[3] v1, const float[3] v2, const float max_ulps = 0.0)
+{
+    // Needs to exactly equal.
+    if (max_ulps == 0) {
+        return v1[0] == v2[0] && v1[1] == v2[1] && v1[2] == v2[2];
+    }
+    // Allow an inaccuracy of size max_ulps.
+    else {
+        if (FloatAbs(v1[0] - v2[0]) > max_ulps) { return false; }
+        if (FloatAbs(v1[1] - v2[1]) > max_ulps) { return false; }
+        if (FloatAbs(v1[2] - v2[2]) > max_ulps) { return false; }
+        return true;
+    }
 }
