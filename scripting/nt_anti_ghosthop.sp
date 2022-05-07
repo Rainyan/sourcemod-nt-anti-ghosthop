@@ -313,20 +313,11 @@ public void OnPlayerRunCmdPost(int client, int buttons, int impulse,
                 return;
             }
 
-#if defined(DEBUG_PROFILE)
-            _profiler.Start();
-#endif
             int wep = GetEntPropEnt(client, Prop_Data, "m_hMyWeapons");
-#if defined(DEBUG_PROFILE)
-            _profiler.Stop();
-            PrintToServer("Profiler (OnPlayerRunCmdPost :: GetEntPropEnt): %f", _profiler.Time);
-#endif
 
             if (wep != -1 && wep == ghost)
             {
                 SDKHooks_DropWeapon(client, ghost, ghoster_pos, NULL_VECTOR);
-
-                // Printing maximum velocity as integer, since the decimals are meaninglessly precise in this context.
                 PrintToChat(client, "%s You have dropped the ghost (jumping faster than ghost carry speed)", PLUGIN_TAG);
             }
             // We had a ghoster userid, and the ghost exists, but that supposed ghoster no longer holds the ghost.
