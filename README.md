@@ -3,10 +3,6 @@ SourceMod plugin for Neotokyo. Forces you to drop the ghost if going too fast mi
 
 https://user-images.githubusercontent.com/6595066/139524476-7a089902-74a4-49ce-bfe6-f721eb7ad004.mp4
 
-![Figure_GhostHop](https://user-images.githubusercontent.com/6595066/149028760-bc9cfc14-5e6e-4efe-802f-92a5d8351a18.png)
-
-_**(Note: The docs below this point are outdated for now.)**_
-
 ## Some background
 NT has a max speed limitation for the ghost carrier to make rushy quick capping less effective.
 However, players could circumvent this limitation by bhopping and/or using the recon AUX jump (dubbed "*ghost hopping*").
@@ -16,47 +12,25 @@ and anti-ghosthop rules have also made their way into many competitive rulesets.
 
 This plugin suggests a different approach, whereby ghost hopping is restricted programmatically, rather than by ambiguous case-by-case rulings.
 
-## How it works
-
-### Reference speeds
-
-All speeds listed below assume flat ground, and optimal wallrun angle of 8 degrees.
-
-#### Recon ghost run speed
-* A **recon ghost carrier** can achieve a max speed of around **255.47 units/sec**.
-#### Recon knife run speed
-* A **recon with knife out** can achieve a max speed of around **344.56 units/sec**.
-
-This plugin will instantly **drop the ghost** to its current position, if:
-* a player is carrying the ghost
-* the player is not touching the ground
-* the player is moving faster than a set maximum air speed limit
-  * maximum allowed ghost carrier air speed is defined by cvar `sm_nt_anti_ghosthop_max_airspeed`
-  * current maximum allowed ghost carrier air speed is set as **Recon knife run speed**
-
 ## Gameplay changes
 
-* **Ghost hopping becomes allowed\***
-  * \*The plugin will enforce max ghost hop speed restrictions, as described in the section above
-  * \*Penalty for going too fast is automatically losing the ghost to its current position
-* Slower classes can now utilize ghost hopping for equaling recon ghost carrier speeds
+* **Ghost hopping becomes allowed**
+  * The plugin will enforce max ghost hop speed restrictions, adjusted for competitive gameplay balance.
+  * Penalty for going too fast is automatically losing hold of the ghost, auto-dropping it to its current position.
+* **Slower classes can now utilize ghost hopping** for equaling recon ghost carrier speeds.
+
+![Figure_GhostHop](https://user-images.githubusercontent.com/6595066/149028760-bc9cfc14-5e6e-4efe-802f-92a5d8351a18.png)
 
 ## Motivations
 
-* Encourage skill based movement, but strike a balance with not breaking game timings
-* Make ghost hopping rulings less ambiguous (the server can automatically decide what is too fast instead of admin intervention)
-
-## Future considerations
-
-* What is a good value for `sm_nt_anti_ghosthop_max_airspeed`?
-  * Needs in-game testing
-  * Plugin is currently live at Creamy servers for testing
+* **Encourage skill based movement**, but strike a balance with not breaking game timings.
+* **Make tournament rulings less ambiguous** — the server will automatically decide what is too fast, instead of relying on subjective human admin intervention.
 
 Thanks for attending my ted talk.
 
 <hr>
 
-## For server operators
+## More info for server operators
 
 ### Troubleshooting
 If *SDKHooks_DropWeapon()* is erroring out in your SourceMod logs, and you are using SM 1.10, make sure your build version [is at least 6517](https://github.com/alliedmodders/sourcemod/commit/36341a5984f21aeb4621d321f3af940) or newer.
