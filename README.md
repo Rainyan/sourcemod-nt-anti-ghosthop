@@ -14,8 +14,8 @@ This plugin suggests a different approach, whereby ghost hopping is restricted p
 
 ## Gameplay changes
 
-* **Ghost hopping becomes allowed**
-  * The plugin will enforce max ghost hop speed restrictions, adjusted for competitive gameplay balance.
+* **Ghost hopping becomes fully allowed**
+  * The plugin will enforce max ghost hop speed restrictions, adjusted for competitive gameplay balance. Whatever ghost movement you can get away with, is by definition now allowed.
   * Penalty for going too fast is automatically losing hold of the ghost, auto-dropping it to its current position.
 * **Slower classes can now utilize ghost hopping** for equaling recon ghost carrier speeds.
 
