@@ -16,7 +16,7 @@
 Profiler _profiler = null;
 #endif
 
-#define PLUGIN_VERSION "0.11.0"
+#define PLUGIN_VERSION "0.11.1"
 #define PLUGIN_TAG "[ANTI-GHOSTHOP]"
 #define NEO_MAXPLAYERS 32
 
