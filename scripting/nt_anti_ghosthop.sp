@@ -470,7 +470,7 @@ stock float Max(float a, float b)
     return a > b ? a : b;
 }
 
-stock bool VectorsEqual(const float[3] v1, const float[3] v2, const float max_ulps = 0.0)
+stock bool VectorsEqual(const float v1[3], const float v2[3], const float max_ulps = 0.0)
 {
     // Needs to exactly equal.
     if (max_ulps == 0) {
