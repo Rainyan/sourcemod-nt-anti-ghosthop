@@ -32,5 +32,9 @@ Thanks for attending my ted talk.
 
 ## More info for server operators
 
+### Build requirements
+* SourceMod version 1.8 or newer
+* The [Neotokyo include](https://github.com/softashell/sourcemod-nt-include) .inc file (place inside <i>scripting/includes</i>)
+
 ### Troubleshooting
 If *SDKHooks_DropWeapon()* is erroring out in your SourceMod logs, and you are using SM 1.10, make sure your build version [is at least 6517](https://github.com/alliedmodders/sourcemod/commit/36341a5984f21aeb4621d321f3af940) or newer.
