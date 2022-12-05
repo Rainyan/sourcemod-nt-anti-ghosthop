@@ -64,6 +64,8 @@ static float _freefall_velocity;
 static bool _freefalling = false;
 // Handle for tracking the grace period reset timer
 static Handle _timer_reset_gp = INVALID_HANDLE;
+// To manually trigger OnGhostDrop event
+static Handle g_hForwardDrop;
 
 static ConVar _cvar_gravity;
 
@@ -129,6 +131,7 @@ public void OnAllPluginsLoaded()
     {
         SetFailState("This plugin requires the nt_ghostcap plugin");
     }
+    g_hForwardDrop = CreateGlobalForward("OnGhostDrop", ET_Event, Param_Cell);
 }
 
 public void OnMapEnd()
@@ -319,6 +322,9 @@ public void OnPlayerRunCmdPost(int client, int buttons, int impulse,
             {
                 SDKHooks_DropWeapon(client, ghost, ghoster_pos, NULL_VECTOR);
                 PrintToChat(client, "%s You have dropped the ghost (jumping faster than ghost carry speed)", PLUGIN_TAG);
+                Call_StartForward(g_hForwardDrop);
+                Call_PushCell(client);
+                Call_Finish();
             }
             // We had a ghoster userid, and the ghost exists, but that supposed ghoster no longer holds the ghost.
             // This can happen if the ghoster is ghost hopping exactly as the round ends and the ghost de-spawns.
