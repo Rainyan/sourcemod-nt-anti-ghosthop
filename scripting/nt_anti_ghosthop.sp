@@ -21,7 +21,7 @@
 Profiler _profiler = null;
 #endif
 
-#define PLUGIN_VERSION "0.12.0"
+#define PLUGIN_VERSION "0.12.1"
 #define PLUGIN_TAG "[ANTI-GHOSTHOP]"
 #define NEO_MAXPLAYERS 32
 
@@ -325,7 +325,14 @@ public void OnPlayerRunCmdPost(int client, int buttons, int impulse,
 
             if (wep != -1 && wep == ghost)
             {
+#if SOURCEMOD_V_MAJOR == 1 && SOURCEMOD_V_MINOR == 9
+                // SM 1.9 bug with the velocity parameter; can't use NULL_VECTOR
+                float vec3_zero[3];
+                SDKHooks_DropWeapon(client, ghost, ghoster_pos, vec3_zero);
+#else
                 SDKHooks_DropWeapon(client, ghost, ghoster_pos, NULL_VECTOR);
+#endif
+
                 PrintToChat(client, "%s You have dropped the ghost (jumping faster than ghost carry speed)", PLUGIN_TAG);
                 Call_StartForward(g_hForwardDrop);
                 Call_PushCell(client);
