@@ -1,3 +1,8 @@
+#if SOURCEMOD_V_MAJOR <= 1 && SOURCEMOD_V_MINOR < 9
+// Because we require OnPlayerRunCmdPost, which was added in 1.9.
+#error This plugin does not support SourceMod older than 1.9
+#endif
+
 #pragma semicolon 1
 
 #include <sourcemod>
