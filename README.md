@@ -41,5 +41,5 @@ Thanks for attending my ted talk.
 ### Troubleshooting
 If *SDKHooks_DropWeapon()* is erroring out in your SourceMod logs, and you are using SM 1.10, make sure your build version [is at least 6517](https://github.com/alliedmodders/sourcemod/commit/36341a5984f21aeb4621d321f3af940) or newer.
 
-### Wasn't there a version of this plugin which allowed faster ghost hopping?
+## Wasn't there a version of this plugin which allowed faster ghost hopping?
 Yes, it is still available in the [version 0.5 legacy branch](https://github.com/Rainyan/sourcemod-nt-anti-ghosthop/tree/legacy_v0.5), although no longer supported.
