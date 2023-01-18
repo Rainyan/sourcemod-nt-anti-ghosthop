@@ -15,13 +15,14 @@
 // Not recommended on release for performance reasons.
 //#define DEBUG
 //#define DEBUG_PROFILE
+//#define DEBUG_VISUALIZE_HACK_RAYTRACE
 
 #if defined(DEBUG_PROFILE)
 #include <profiler>
 Profiler _profiler = null;
 #endif
 
-#define PLUGIN_VERSION "0.12.1"
+#define PLUGIN_VERSION "0.12.1+CompHotfix"
 #define PLUGIN_TAG "[ANTI-GHOSTHOP]"
 #define NEO_MAXPLAYERS 32
 
@@ -325,6 +326,16 @@ public void OnPlayerRunCmdPost(int client, int buttons, int impulse,
 
             if (wep != -1 && wep == ghost)
             {
+                // HACK: Final sanity check before we call this penalizable ghost hopping.
+                // For some reason, this has been triggering for seemingly not-jumping ghost carriers
+                // in un-reproducable ways; this final check should catch those cases.
+                // This is kind of awful but necessary for now.
+                if (!Hack_IsReallyAirborne(client))
+                {
+                    _prev_ghoster_pos = ghoster_pos;
+                    return;
+                }
+
 #if SOURCEMOD_V_MAJOR == 1 && SOURCEMOD_V_MINOR == 9
                 // SM 1.9 bug with the velocity parameter; can't use NULL_VECTOR
                 float vec3_zero[3];
@@ -351,6 +362,158 @@ public void OnPlayerRunCmdPost(int client, int buttons, int impulse,
     }
 
     _prev_ghoster_pos = ghoster_pos;
+}
+
+// HACK: We're hitting false positives, but there's no reproducible case yet,
+// so just do a dumb heuristic to verify if we're actually hopping.
+// This should get cleaned up to fix the underlying bug, initially.
+// This could get us a false negative with really bad luck,
+// but it's much better than a false positive ruining rounds.
+//
+// This does a bunch of raycasts around the bottom of the player's
+// mins/maxs collision boundary, and measure the distance to walkable
+// geometry from below those points. If any point of the player collider
+// is sufficiently close to standing atop walkable geometry, we consider it not jumping.
+//
+// All of this stuff should be handled for us by the engine, via the FL_ONGROUND flag, but alas.
+bool Hack_IsReallyAirborne(int client)
+{
+#if defined(DEBUG_PROFILE)
+    _profiler.Start();
+#endif
+
+    float start[3];
+    float end[3];
+    GetClientAbsOrigin(client, start);
+
+    // Offsets to fire raycasts from
+    float minsmaxs_offsets[][] = {
+        // Get abs origin center first
+        { 0.0, 0.0, 0.0 },
+
+        // The lateral mins/maxs are the same (16) for all classes in NT.
+        { -16.0, -16.0, 0.0 },
+        { -16.0, 16.0, 0.0 },
+        { 16.0, -16.0, 0.0 },
+        { 16.0, 16.0, 0.0 },
+        // The centers of the outer edge of the lateral bottom-minsmaxs.
+        { -16.0, 0.0, 0.0 },
+        { 0.0, -16.0, 0.0 },
+        { 16.0, 0.0, 0.0 },
+        { 0.0, 16.0, 0.0 },
+
+        // ... And centers of in-between the corners and the centers.
+        // We mostly care about this outer circle, because that's what will detect
+        // us standing on a sloped surface where the abs origin is not making contact with the ground.
+        { -16.0, 4.0, 0.0 },
+        { -16.0, -4.0, 0.0 },
+        { 16.0, 4.0, 0.0 },
+        { 16.0, -4.0, 0.0 },
+        { 4.0, 16.0, 0.0 },
+        { -4.0, -16.0, 0.0 },
+        { 4.0, 16.0, 0.0 },
+        { 4.0, -16.0, 0.0 },
+        { -16.0, 8.0, 0.0 },
+        { -16.0, -8.0, 0.0 },
+        { 16.0, 8.0, 0.0 },
+        { 16.0, -8.0, 0.0 },
+        { 8.0, 16.0, 0.0 },
+        { -8.0, -16.0, 0.0 },
+        { 8.0, 16.0, 0.0 },
+        { 8.0, -16.0, 0.0 },
+        { -16.0, 12.0, 0.0 },
+        { -16.0, -12.0, 0.0 },
+        { 16.0, 12.0, 0.0 },
+        { 16.0, -12.0, 0.0 },
+        { 12.0, 16.0, 0.0 },
+        { -12.0, -16.0, 0.0 },
+        { 12.0, 16.0, 0.0 },
+        { 12.0, -16.0, 0.0 },
+        { -12.0, 16.0, 0.0 },
+        { -8.0, 16.0, 0.0 },
+        { -4.0, 16.0, 0.0 },
+
+        // And finally, do an X-shape to get some spots around the middle of the collider's bottom.
+        { 4.0, 4.0, 0.0 },
+        { -4.0, -4.0, 0.0 },
+        { 4.0, -4.0, 0.0 },
+        { -4.0, 4.0, 0.0 },
+        { 8.0, 8.0, 0.0 },
+        { -8.0, -8.0, 0.0 },
+        { 8.0, -8.0, 0.0 },
+        { -8.0, 8.0, 0.0 },
+        { 12.0, 12.0, 0.0 },
+        { -12.0, -12.0, 0.0 },
+        { 12.0, -12.0, 0.0 },
+        { -12.0, 12.0, 0.0 },
+    };
+
+    // Angle to fire at (directly down)
+    float ang_down[3] = { 90.0, 0.0, 0.0 };
+
+    for (int i = 0; i < sizeof(minsmaxs_offsets); ++i)
+    {
+        // Offset from the abs origin
+        AddVectors(start, minsmaxs_offsets[i], start);
+
+        // Playersolid masks anything player-standable
+        TR_TraceRay(start, ang_down, MASK_PLAYERSOLID,
+            RayType_Infinite);
+        TR_GetEndPosition(end);
+
+        // Visualize the ray casts for debug
+#if defined(DEBUG_VISUALIZE_HACK_RAYTRACE)
+#define BEAM_ASSET "materials/sprites/purplelaser1.vmt"
+        if (!FileExists(BEAM_ASSET, true, NULL_STRING))
+        {
+            SetFailState("File doesn't exist: \"%s\"", BEAM_ASSET);
+        }
+        int model = PrecacheModel(BEAM_ASSET);
+        if (model == 0)
+        {
+            SetFailState("Failed to precache: \"%s\"", BEAM_ASSET);
+        }
+        int color[4] = { 255, 255, 0, 255 };
+        TE_SetupBeamPoints(start, end, model, model, 0, 1, 10.0, 3.0, 3.0, 1, 1.0, color, 10);
+        TE_SendToAll();
+#endif
+
+        float dist_to_ground = GetVectorDistance(start, end);
+#if defined(DEBUG)
+        PrintToChat(client,"%s (DEBUG) Dist %d: %f", PLUGIN_TAG, i, dist_to_ground);
+#endif
+
+#define DIST_TO_GROUND_CONSIDERED_AIRBONE 4.0
+        // If any of the lateral mins of the client are at a near-brushing distance
+        // from a solid surface, consider us to not be fully airborne.
+        if (dist_to_ground <= DIST_TO_GROUND_CONSIDERED_AIRBONE)
+        {
+#if defined(DEBUG_PROFILE)
+            _profiler.Stop();
+            PrintToServer("Profiler (Hack_IsReallyAirborne :: Raycasting stuff -- early return at %d): %f", i, _profiler.Time);
+#if defined(DEBUG_VISUALIZE_HACK_RAYTRACE)
+            PrintToServer("WARNING: Also visualizing the raytrace(s) -- this will degrade performance in the measurement!");
+#endif
+#endif
+            return false;
+        }
+
+        // Undo the offset so we can reuse variables.
+        SubtractVectors(start, minsmaxs_offsets[i], start);
+    }
+
+    // Combined with the FL_ONGROUND flag (which really should be doing all of this stuff),
+    // we're reasonably confident we are actually in-air if we got this far.
+    // There is a small chance of false positive with some really unfortunate "holey" geometry,
+    // but this should catch nearly all usual cases.
+#if defined(DEBUG_PROFILE)
+    _profiler.Stop();
+    PrintToServer("Profiler (Hack_IsReallyAirborne :: Raycasting stuff -- complete loop): %f", _profiler.Time);
+#if defined(DEBUG_VISUALIZE_HACK_RAYTRACE)
+    PrintToServer("WARNING: Also visualizing the raytrace(s) -- this will degrade performance in the measurement!");
+#endif
+#endif
+    return true;
 }
 
 public Action Timer_ResetGp(Handle timer, int userid)
@@ -404,7 +567,7 @@ GracePeriodEnum PollGracePeriod(float lateral_vel, float vertical_vel, float max
     }
     if (_grace_period > DEFAULT_GRACE_PERIOD)
     {
-        SetFailState("_grace_period > DEFAULT_GRACE_PERIOD")
+        SetFailState("_grace_period > DEFAULT_GRACE_PERIOD");
     }
 #endif
 
