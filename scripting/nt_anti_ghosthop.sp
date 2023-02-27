@@ -22,9 +22,12 @@
 Profiler _profiler = null;
 #endif
 
-#define PLUGIN_VERSION "0.12.1+CompHotfix"
+#define PLUGIN_VERSION "0.13.0"
 #define PLUGIN_TAG "[ANTI-GHOSTHOP]"
+
+#if !defined(NEO_MAXPLAYERS)
 #define NEO_MAXPLAYERS 32
+#endif
 
 // Class specific max ghost carrier land speeds (w/ 8 degree "wall hug" boost)
 #define MAX_SPEED_RECON 255.47
