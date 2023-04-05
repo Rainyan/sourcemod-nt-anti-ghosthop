@@ -23,7 +23,7 @@ This plugin suggests a different approach, whereby ghost hopping is restricted p
 #### Terms used in the above graph, explained:
 * *air velocity*: The lateral speed (vertical up/down velocity of jumping/falling is ignored) of the ghosting player.
 * *grace period*: An arbitrary per-player counter which begins depleting when ghosthopping, and recovers gradually. When it hits zero, the ghost is forced to drop. Dropping the ghost will also instantly replenish that player's grace period counter.
-* *max air speed limit*: The highest (lateral) air velocity allowed before grace period starts depleting. Its value is set as the highest speed the ghoster could plausibly move were they not bhopping.
+* *max air speed limit*: The highest (lateral) air velocity allowed before grace period starts depleting. Its value is set as the highest possible lateral speed the ghoster could move were they not bhopping.
 
 ## Motivations
 
