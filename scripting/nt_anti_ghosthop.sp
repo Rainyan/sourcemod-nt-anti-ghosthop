@@ -12,7 +12,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "1.0.0"
+#define PLUGIN_VERSION "1.0.0+test1"
 #define PLUGIN_TAG "[ANTI-GHOSTHOP]"
 
 // Class specific max ghost carrier land speeds (w/ 8 degree "wall hug" boost)
@@ -23,6 +23,7 @@
 // Caching this stuff because we're potentially using it on each tick
 static int _ghost_carrier;
 static float _prev_ghoster_pos[3];
+static bool _done_initial_hop;
 
 ConVar _verbose, _scale;
 
@@ -46,6 +47,13 @@ public void OnPluginStart()
     _scale = CreateConVar("sm_nt_anti_ghosthop_scale", "1.0",
         "Scaling for the strictness of anti-ghosthop slowdown.",
         _, true, 0.0);
+
+    HookEvent("game_round_start", OnRoundStart, EventHookMode_Pre);
+}
+
+public void OnRoundStart(Event event, const char[] name, bool dontBroadcast)
+{
+    ResetGhoster();
 }
 
 public void OnAllPluginsLoaded()
@@ -64,27 +72,34 @@ public void OnClientDisconnect_Post(int client)
     }
 }
 
-public Action OnGhostCapture(int client)
+void ResetGhoster()
 {
     _ghost_carrier = 0;
+    _prev_ghoster_pos = { 0.0, 0.0, 0.0 };
+    _done_initial_hop = false;
+}
+
+public Action OnGhostCapture(int client)
+{
+    ResetGhoster();
     return Plugin_Continue;
 }
 
 public Action OnGhostDrop(int client)
 {
-    _ghost_carrier = 0;
+    ResetGhoster();
     return Plugin_Continue;
 }
 
 public Action OnGhostPickUp(int client)
 {
-    _ghost_carrier = client;
+    ResetGhoster();
     return Plugin_Continue;
 }
 
 public Action OnGhostSpawn(int ghost_ref)
 {
-    _ghost_carrier = 0;
+    ResetGhoster();
     return Plugin_Continue;
 }
 
@@ -146,6 +161,14 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
     if ((buttons & IN_JUMP) &&
         (GetEntityFlags(client) & FL_ONGROUND))
     {
+        // Allow one initial hop; this makes it possible for the ghoster to
+        // cross some environment dangers like the fire pit with ghost in hand.
+        if (!_done_initial_hop)
+        {
+            _done_initial_hop = true;
+            return Plugin_Continue;
+        }
+
         // Ignore ladders
         if (GetEntityMoveType(client) == MOVETYPE_LADDER)
         {
