@@ -11,7 +11,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "1.0.0"
+#define PLUGIN_VERSION "1.0.1"
 #define PLUGIN_TAG "[ANTI-GHOSTHOP]"
 
 // Class specific max ghost carrier land speeds (w/ 8 degree "wall hug" boost)
@@ -28,7 +28,7 @@ ConVar _verbose, _scale;
 
 public Plugin myinfo = {
     name = "NT Anti Ghosthop",
-    description = "Forces you to drop the ghost if going too fast mid-air.",
+    description = "Limit the max movement speed while bunnyhopping with the ghost.",
     author = "Rain",
     version = PLUGIN_VERSION,
     url = "https://github.com/Rainyan/sourcemod-nt-anti-ghosthop"
