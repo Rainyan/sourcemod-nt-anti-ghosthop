@@ -38,3 +38,6 @@ Thanks for attending my ted talk.
 ### Cvars
 * `sm_nt_anti_ghosthop_verbosity` How much feedback to give to the players about ghosthopping. 0: disabled, 1: notify when being limited in text chat. Default: 1
 * `sm_nt_anti_ghosthop_scale` Scaling for the strictness of the anti-ghosthop slowdown. Minimum: 0.0, Default: 1.0
+
+### What happened to the older versions?
+The old versions are still available [from the tags](https://github.com/Rainyan/sourcemod-nt-anti-ghosthop/tags). Note that these older versions are no longer supported.
