@@ -4,7 +4,6 @@
 #endif
 
 #include <sourcemod>
-#include <sdkhooks>
 #include <sdktools>
 
 #include <neotokyo>
@@ -94,7 +93,7 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
         {
             _done_initial_hop = true;
         }
-        else if (GetVectorLength(_prev_ghoster_pos, true) != 0)
+        else if (GetVectorLength(_prev_ghoster_pos, true) != 0.0)
         {
             float ups[3];
             SubtractVectors(pos, _prev_ghoster_pos, ups);
