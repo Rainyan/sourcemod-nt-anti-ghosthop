@@ -86,7 +86,7 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 
     if ((buttons & IN_JUMP) &&
         (GetEntityFlags(client) & FL_ONGROUND) &&
-		_scale.FloatValue > 0)
+        _scale.FloatValue > 0)
     {
         // Allow one initial hop; this makes it possible for the ghoster to
         // cross some environment dangers like the fire pit with ghost in hand.
@@ -98,7 +98,7 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
         {
             float ups[3];
             SubtractVectors(pos, _prev_ghoster_pos, ups);
-            float delta_time = GetGameFrameTime();
+            float delta_time = GetTickInterval();
             ups[0] /= delta_time;
             ups[1] /= delta_time;
             ups[2] = 0.0;
@@ -129,7 +129,9 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 void ResetGhoster()
 {
     _ghost_carrier = 0;
-    _prev_ghoster_pos = { 0.0, 0.0, 0.0 };
+    _prev_ghoster_pos[0] = 0.0;
+    _prev_ghoster_pos[1] = 0.0;
+    _prev_ghoster_pos[2] = 0.0;
     _done_initial_hop = false;
 }
 
