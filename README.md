@@ -1,6 +1,8 @@
 # sourcemod-nt-anti-ghosthop
 SourceMod plugin for Neotokyo that limits the max movement speed while bunnyhopping with the ghost.
 
+[hop_example.webm](https://github.com/Rainyan/sourcemod-nt-anti-ghosthop/assets/6595066/1502bdd3-8341-4cc4-ad64-7ab048ff111e)
+
 ## Some background
 NT has a max speed limitation for the ghost carrier to make rushy quick capping less effective.
 However, players could circumvent this limitation by bhopping and/or using the recon AUX jump (dubbed "*ghost hopping*").
