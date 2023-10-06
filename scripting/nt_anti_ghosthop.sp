@@ -11,7 +11,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "1.0.1"
+#define PLUGIN_VERSION "1.0.2"
 #define PLUGIN_TAG "[ANTI-GHOSTHOP]"
 
 // Class specific max ghost carrier land speeds (w/ 8 degree "wall hug" boost)
@@ -148,7 +148,7 @@ public Action OnGhostDrop(int client)
 
 public Action OnGhostPickUp(int client)
 {
-    ResetGhoster();
+    _ghost_carrier = client;
     return Plugin_Continue;
 }
 
