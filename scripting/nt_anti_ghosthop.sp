@@ -1,6 +1,6 @@
-#if SOURCEMOD_V_MAJOR <= 1 && SOURCEMOD_V_MINOR < 9
-// Because we require OnPlayerRunCmdPost, which was added in 1.9.
-#error This plugin does not support SourceMod older than 1.9
+#if SOURCEMOD_V_MAJOR <= 1 && SOURCEMOD_V_MINOR < 7
+// Because we require OnPlayerRunCmd, which was added in 1.7.
+#error This plugin does not support SourceMod older than 1.7
 #endif
 
 #include <sourcemod>
@@ -12,7 +12,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "1.0.0+test1"
+#define PLUGIN_VERSION "1.0.0+test2"
 #define PLUGIN_TAG "[ANTI-GHOSTHOP]"
 
 // Class specific max ghost carrier land speeds (w/ 8 degree "wall hug" boost)
@@ -68,8 +68,62 @@ public void OnClientDisconnect_Post(int client)
 {
     if (client == _ghost_carrier)
     {
-        _ghost_carrier = 0;
+        ResetGhoster();
     }
+}
+
+public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3],
+    float angles[3], int& weapon, int& subtype, int& cmdnum, int& tickcount,
+    int& seed, int mouse[2])
+{
+    if (client != _ghost_carrier)
+    {
+        return Plugin_Continue;
+    }
+
+    float pos[3];
+    GetClientAbsOrigin(client, pos);
+
+    if ((buttons & IN_JUMP) &&
+        (GetEntityFlags(client) & FL_ONGROUND) &&
+		_scale.FloatValue > 0)
+    {
+        // Allow one initial hop; this makes it possible for the ghoster to
+        // cross some environment dangers like the fire pit with ghost in hand.
+        if (!_done_initial_hop)
+        {
+            _done_initial_hop = true;
+        }
+        else if (GetVectorLength(_prev_ghoster_pos, true) != 0)
+        {
+            float ups[3];
+            SubtractVectors(pos, _prev_ghoster_pos, ups);
+            float delta_time = GetGameFrameTime();
+            ups[0] /= delta_time;
+            ups[1] /= delta_time;
+            ups[2] = 0.0;
+
+            float speed = GetVectorLength(ups);
+            float max_speed = GetMaxGhostSpeed(client) / _scale.FloatValue;
+
+            if (speed > max_speed)
+            {
+                ClampVelocityInPlace2D(ups, speed - max_speed);
+                NegateVector(ups);
+                ApplyAbsVelocityImpulse(client, ups);
+
+                if (_verbose.BoolValue)
+                {
+                    PrintToChat(client, "%s Limiting speed: %.0f -> %.0f",
+                        PLUGIN_TAG, speed, max_speed);
+                }
+            }
+        }
+    }
+
+    _prev_ghoster_pos = pos;
+
+    return Plugin_Continue;
 }
 
 void ResetGhoster()
@@ -144,72 +198,4 @@ void ApplyAbsVelocityImpulse(int entity, const float impulse[3])
         }
     }
     SDKCall(call, entity, impulse);
-}
-
-public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3],
-    float angles[3], int& weapon, int& subtype, int& cmdnum, int& tickcount,
-    int& seed, int mouse[2])
-{
-    if (client != _ghost_carrier || _scale.FloatValue == 0)
-    {
-        return Plugin_Continue;
-    }
-
-    float pos[3];
-    GetClientAbsOrigin(client, pos);
-
-    if ((buttons & IN_JUMP) &&
-        (GetEntityFlags(client) & FL_ONGROUND))
-    {
-        // Allow one initial hop; this makes it possible for the ghoster to
-        // cross some environment dangers like the fire pit with ghost in hand.
-        if (!_done_initial_hop)
-        {
-            _done_initial_hop = true;
-            return Plugin_Continue;
-        }
-
-        // Ignore ladders
-        if (GetEntityMoveType(client) == MOVETYPE_LADDER)
-        {
-            return Plugin_Continue;
-        }
-#if defined(DEBUG)
-        // Ignore debug noclip flying
-        else if (GetEntityMoveType(client) == MOVETYPE_NOCLIP)
-        {
-            return Plugin_Continue;
-        }
-#endif
-
-        if (GetVectorLength(_prev_ghoster_pos, true) != 0)
-        {
-            float ups[3];
-            SubtractVectors(pos, _prev_ghoster_pos, ups);
-            float delta_time = GetGameFrameTime();
-            ups[0] /= delta_time;
-            ups[1] /= delta_time;
-            ups[2] = 0.0;
-
-            float speed = GetVectorLength(ups);
-            float max_speed = GetMaxGhostSpeed(client) / _scale.FloatValue;
-
-            if (speed > max_speed)
-            {
-                ClampVelocityInPlace2D(ups, speed - max_speed);
-                NegateVector(ups);
-                ApplyAbsVelocityImpulse(client, ups);
-
-                if (_verbose.BoolValue)
-                {
-                    PrintToChat(client, "%s Limiting speed: %.0f -> %.0f",
-                        PLUGIN_TAG, speed, max_speed);
-                }
-            }
-        }
-    }
-
-    _prev_ghoster_pos = pos;
-
-    return Plugin_Continue;
 }
