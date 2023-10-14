@@ -36,7 +36,7 @@ Thanks for attending my ted talk.
 * The [nt_ghostcap plugin](https://github.com/softashell/nt-sourcemod-plugins/blob/master/scripting/nt_ghostcap.sp) is required to use this plugin.
 
 ### Cvars
-* `sm_nt_anti_ghosthop_verbosity` How much feedback to give to the players about ghosthopping. 0: disabled, 1: notify when being limited in text chat. Default: 1
+* `sm_nt_anti_ghosthop_verbosity` How much feedback to give to the players about ghosthopping. 0: disabled, 1: notify when being limited in text chat. Default: 0
 * `sm_nt_anti_ghosthop_scale` Scaling for the strictness of the anti-ghosthop slowdown. Minimum: 0.0, Default: 1.0
 
 ### What happened to the older versions?
