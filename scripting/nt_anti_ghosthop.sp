@@ -38,7 +38,7 @@ public Plugin myinfo = {
 public void OnPluginStart()
 {
     CreateConVar("sm_nt_anti_ghosthop_version", PLUGIN_VERSION,
-        "NT Anti Ghosthop plugin version", FCVAR_SPONLY  | FCVAR_REPLICATED | FCVAR_NOTIFY);
+        "NT Anti Ghosthop plugin version", FCVAR_DONTRECORD);
 
     _verbose = CreateConVar("sm_nt_anti_ghosthop_verbosity", "0",
         "How much feedback to give to the players about ghosthopping. \
