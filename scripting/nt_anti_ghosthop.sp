@@ -11,7 +11,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "1.0.4"
+#define PLUGIN_VERSION "1.0.5"
 #define PLUGIN_TAG "[ANTI-GHOSTHOP]"
 
 // Class specific max ghost carrier land speeds (w/ ~36.95 degree "wall hug" boost)
@@ -39,7 +39,7 @@ public void OnPluginStart()
     CreateConVar("sm_nt_anti_ghosthop_version", PLUGIN_VERSION,
         "NT Anti Ghosthop plugin version", FCVAR_SPONLY  | FCVAR_REPLICATED | FCVAR_NOTIFY);
 
-    _verbose = CreateConVar("sm_nt_anti_ghosthop_verbosity", "1",
+    _verbose = CreateConVar("sm_nt_anti_ghosthop_verbosity", "0",
         "How much feedback to give to the players about ghosthopping. \
 0: disabled, 1: notify when being limited in text chat",
         _, true, float(false), true, float(true));
