@@ -11,7 +11,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "1.0.5"
+#define PLUGIN_VERSION "1.0.6"
 #define PLUGIN_TAG "[ANTI-GHOSTHOP]"
 
 // Class specific max ghost carrier land speeds (w/ ~36.95 degree "wall hug" boost)
@@ -83,40 +83,45 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
     float pos[3];
     GetClientAbsOrigin(client, pos);
 
-    if ((buttons & IN_JUMP) &&
-        (GetEntityFlags(client) & FL_ONGROUND) &&
-        _scale.FloatValue > 0)
+    if (GetEntityFlags(client) & FL_ONGROUND)
     {
-        // Allow one initial hop; this makes it possible for the ghoster to
-        // cross some environment dangers like the fire pit with ghost in hand.
-        if (!_done_initial_hop)
+        if ((buttons & IN_JUMP) && _scale.FloatValue > 0)
         {
-            _done_initial_hop = true;
-        }
-        else if (GetVectorLength(_prev_ghoster_pos, true) != 0.0)
-        {
-            float ups[3];
-            SubtractVectors(pos, _prev_ghoster_pos, ups);
-            float delta_time = GetTickInterval();
-            ups[0] /= delta_time;
-            ups[1] /= delta_time;
-            ups[2] = 0.0;
-
-            float speed = GetVectorLength(ups);
-            float max_speed = GetMaxGhostSpeed(client) / _scale.FloatValue;
-
-            if (speed > max_speed)
+            // Allow one initial hop; this makes it possible for the ghoster to
+            // cross some environment dangers like the fire pit with ghost in hand.
+            if (!_done_initial_hop)
             {
-                ClampVelocityInPlace2D(ups, speed - max_speed);
-                NegateVector(ups);
-                ApplyAbsVelocityImpulse(client, ups);
+                _done_initial_hop = true;
+            }
+            else if (GetVectorLength(_prev_ghoster_pos, true) != 0.0)
+            {
+                float ups[3];
+                SubtractVectors(pos, _prev_ghoster_pos, ups);
+                float delta_time = GetTickInterval();
+                ups[0] /= delta_time;
+                ups[1] /= delta_time;
+                ups[2] = 0.0;
 
-                if (_verbose.BoolValue)
+                float speed = GetVectorLength(ups);
+                float max_speed = GetMaxGhostSpeed(client) / _scale.FloatValue;
+
+                if (speed > max_speed)
                 {
-                    PrintToChat(client, "%s Limiting speed: %.0f -> %.0f",
-                        PLUGIN_TAG, speed, max_speed);
+                    ClampVelocityInPlace2D(ups, speed - max_speed);
+                    NegateVector(ups);
+                    ApplyAbsVelocityImpulse(client, ups);
+
+                    if (_verbose.BoolValue)
+                    {
+                        PrintToChat(client, "%s Limiting speed: %.0f -> %.0f",
+                            PLUGIN_TAG, speed, max_speed);
+                    }
                 }
             }
+        }
+        else
+        {
+            _done_initial_hop = false;
         }
     }
 
