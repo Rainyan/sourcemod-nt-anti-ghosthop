@@ -11,7 +11,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "1.2.3"
+#define PLUGIN_VERSION "2.0.0"
 #define PLUGIN_TAG "[ANTI-GHOSTHOP]"
 
 // Class specific max ghost carrier land speeds (w/ ~36.95 degree "wall hug" boost)
@@ -44,8 +44,8 @@ public void OnPluginStart()
         "How much feedback to give to the players about ghosthopping. \
 0: disabled, 1: notify when being limited in text chat",
         _, true, float(false), true, float(true));
-    _scale = CreateConVar("sm_nt_anti_ghosthop_scale", "1.0",
-        "Scaling for the strictness of anti-ghosthop slowdown.",
+    _scale = CreateConVar("sm_nt_anti_ghosthop_speed_scale", "1.0",
+        "Scaling for the of anti-ghosthop slowdown.",
         _, true, 0.0);
     _n_allowed_hops = CreateConVar("sm_nt_anti_ghosthop_n_allowed_hops", "1",
         "How many ghost hops to tolerate before limiting speed. Resets \
@@ -109,7 +109,7 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
                 ups[2] = 0.0;
 
                 float speed = GetVectorLength(ups);
-                float max_speed = GetMaxGhostSpeed(client) / _scale.FloatValue;
+                float max_speed = GetMaxGhostSpeed(client) * _scale.FloatValue;
 
                 if (speed > max_speed)
                 {
