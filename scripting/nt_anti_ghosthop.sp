@@ -112,8 +112,14 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 
                     if (_verbose.BoolValue)
                     {
-                        PrintToChat(client, "%s Limiting speed: %.0f -> %.0f",
-                            PLUGIN_TAG, speed, max_speed);
+                        static float last_nag_time;
+                        float time = GetGameTime();
+                        if (time - last_nag_time > 15.0)
+                        {
+                            PrintToChat(client, "%s Limiting speed: %.0f -> %.0f",
+                                PLUGIN_TAG, speed, max_speed);
+                            last_nag_time = time;
+                        }
                     }
                 }
             }
