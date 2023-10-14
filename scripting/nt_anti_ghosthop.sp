@@ -11,13 +11,13 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "1.0.3"
+#define PLUGIN_VERSION "1.0.4"
 #define PLUGIN_TAG "[ANTI-GHOSTHOP]"
 
-// Class specific max ghost carrier land speeds (w/ 8 degree "wall hug" boost)
-#define MAX_SPEED_RECON 255.47
-#define MAX_SPEED_ASSAULT 204.38
-#define MAX_SPEED_SUPPORT 153.28
+// Class specific max ghost carrier land speeds (w/ ~36.95 degree "wall hug" boost)
+#define MAX_SPEED_RECON 255.427734
+#define MAX_SPEED_ASSAULT 204.364746
+#define MAX_SPEED_SUPPORT 204.380859
 
 // Caching this stuff because we're potentially using it on each tick
 static int _ghost_carrier;
