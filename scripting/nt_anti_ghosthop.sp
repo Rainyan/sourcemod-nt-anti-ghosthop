@@ -1,4 +1,4 @@
-#if SOURCEMOD_V_MAJOR <= 1 && SOURCEMOD_V_MINOR < 7
+#if SOURCEMOD_V_MAJOR < 1 || (SOURCEMOD_V_MAJOR == 1 && SOURCEMOD_V_MINOR < 7)
 // Because we require OnPlayerRunCmd, which was added in 1.7.
 #error This plugin does not support SourceMod older than 1.7
 #endif
