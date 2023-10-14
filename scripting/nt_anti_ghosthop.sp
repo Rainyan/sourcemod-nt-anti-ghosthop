@@ -11,7 +11,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "1.2.1"
+#define PLUGIN_VERSION "1.2.2"
 #define PLUGIN_TAG "[ANTI-GHOSTHOP]"
 
 // Class specific max ghost carrier land speeds (w/ ~36.95 degree "wall hug" boost)
@@ -87,11 +87,12 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
     float pos[3];
     GetClientAbsOrigin(client, pos);
 
-    if (GetEntityFlags(client) & FL_ONGROUND)
+    static bool was_on_ground_last_cmd;
+    bool is_on_ground = GetEntityFlags(client) & FL_ONGROUND != 0;
+
+    if (!was_on_ground_last_cmd && is_on_ground)
     {
-        if (((buttons & IN_JUMP) ||
-            (GetEntProp(client, Prop_Data, "m_nOldButtons") & IN_JUMP))
-            && _scale.FloatValue > 0)
+        if ((buttons & IN_JUMP) && _scale.FloatValue > 0)
         {
             if (GetVectorLength(_prev_ghoster_pos, true) != 0.0 &&
                 ++_num_hops > _n_allowed_hops.IntValue)
@@ -116,7 +117,7 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
                     {
                         static float last_nag_time;
                         float time = GetGameTime();
-                        if (time - last_nag_time > 15.0)
+                        if (true || time - last_nag_time > 15.0)
                         {
                             PrintToChat(client, "%s Limiting speed: %.0f -> %.0f",
                                 PLUGIN_TAG, speed, max_speed);
@@ -126,11 +127,13 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
                 }
             }
         }
-        else
-        {
-            _num_hops = 0;
-        }
     }
+    else if (is_on_ground)
+    {
+        _num_hops = 0;
+    }
+
+    was_on_ground_last_cmd = is_on_ground;
 
     _prev_ghoster_pos = pos;
 
