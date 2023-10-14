@@ -11,7 +11,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "1.0.6"
+#define PLUGIN_VERSION "1.1.0"
 #define PLUGIN_TAG "[ANTI-GHOSTHOP]"
 
 // Class specific max ghost carrier land speeds (w/ ~36.95 degree "wall hug" boost)
@@ -20,11 +20,10 @@
 #define MAX_SPEED_SUPPORT 204.380859
 
 // Caching this stuff because we're potentially using it on each tick
-static int _ghost_carrier;
+static int _ghost_carrier, _num_hops;
 static float _prev_ghoster_pos[3];
-static bool _done_initial_hop;
 
-ConVar _verbose, _scale;
+ConVar _verbose, _scale, _n_allowed_hops;
 
 public Plugin myinfo = {
     name = "NT Anti Ghosthop",
@@ -46,6 +45,9 @@ public void OnPluginStart()
     _scale = CreateConVar("sm_nt_anti_ghosthop_scale", "1.0",
         "Scaling for the strictness of anti-ghosthop slowdown.",
         _, true, 0.0);
+    _n_allowed_hops = CreateConVar("sm_nt_anti_ghosthop_n_allowed_hops", "1",
+        "How many ghost hops to tolerate before limiting speed. Resets \
+at the end of the bhop chain.", _, true, 0.0);
 
     HookEvent("game_round_start", OnRoundStart, EventHookMode_Pre);
 }
@@ -85,15 +87,12 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 
     if (GetEntityFlags(client) & FL_ONGROUND)
     {
-        if ((buttons & IN_JUMP) && _scale.FloatValue > 0)
+        if (((buttons & IN_JUMP) ||
+            (GetEntProp(client, Prop_Data, "m_nOldButtons") & IN_JUMP))
+            && _scale.FloatValue > 0)
         {
-            // Allow one initial hop; this makes it possible for the ghoster to
-            // cross some environment dangers like the fire pit with ghost in hand.
-            if (!_done_initial_hop)
-            {
-                _done_initial_hop = true;
-            }
-            else if (GetVectorLength(_prev_ghoster_pos, true) != 0.0)
+            if (++_num_hops > _n_allowed_hops.IntValue &&
+                GetVectorLength(_prev_ghoster_pos, true) != 0.0)
             {
                 float ups[3];
                 SubtractVectors(pos, _prev_ghoster_pos, ups);
@@ -121,7 +120,7 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
         }
         else
         {
-            _done_initial_hop = false;
+            _num_hops = 0;
         }
     }
 
@@ -133,10 +132,10 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 void ResetGhoster()
 {
     _ghost_carrier = 0;
+    _num_hops = 0;
     _prev_ghoster_pos[0] = 0.0;
     _prev_ghoster_pos[1] = 0.0;
     _prev_ghoster_pos[2] = 0.0;
-    _done_initial_hop = false;
 }
 
 public Action OnGhostCapture(int client)
