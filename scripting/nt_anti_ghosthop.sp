@@ -11,7 +11,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "1.1.1"
+#define PLUGIN_VERSION "1.2.0"
 #define PLUGIN_TAG "[ANTI-GHOSTHOP]"
 
 // Class specific max ghost carrier land speeds (w/ ~36.95 degree "wall hug" boost)
@@ -50,6 +50,8 @@ public void OnPluginStart()
 at the end of the bhop chain.", _, true, 0.0);
 
     HookEvent("game_round_start", OnRoundStart, EventHookMode_Pre);
+
+    AutoExecConfig();
 }
 
 public void OnRoundStart(Event event, const char[] name, bool dontBroadcast)
