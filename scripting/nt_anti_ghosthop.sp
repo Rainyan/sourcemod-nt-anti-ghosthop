@@ -11,7 +11,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "1.2.2"
+#define PLUGIN_VERSION "1.2.3"
 #define PLUGIN_TAG "[ANTI-GHOSTHOP]"
 
 // Class specific max ghost carrier land speeds (w/ ~36.95 degree "wall hug" boost)
@@ -22,6 +22,8 @@
 // Caching this stuff because we're potentially using it on each tick
 static int _ghost_carrier, _num_hops;
 static float _prev_ghoster_pos[3];
+static float _rest_duration;
+static bool _was_on_ground_last_cmd;
 
 ConVar _verbose, _scale, _n_allowed_hops;
 
@@ -87,12 +89,14 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
     float pos[3];
     GetClientAbsOrigin(client, pos);
 
-    static bool was_on_ground_last_cmd;
+
     bool is_on_ground = GetEntityFlags(client) & FL_ONGROUND != 0;
 
-    if (!was_on_ground_last_cmd && is_on_ground)
+    if (!_was_on_ground_last_cmd)
     {
-        if ((buttons & IN_JUMP) && _scale.FloatValue > 0)
+        _rest_duration = 0.0;
+
+        if (is_on_ground && _scale.FloatValue > 0)
         {
             if (GetVectorLength(_prev_ghoster_pos, true) != 0.0 &&
                 ++_num_hops > _n_allowed_hops.IntValue)
@@ -117,7 +121,7 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
                     {
                         static float last_nag_time;
                         float time = GetGameTime();
-                        if (true || time - last_nag_time > 15.0)
+                        if (time - last_nag_time > 15.0)
                         {
                             PrintToChat(client, "%s Limiting speed: %.0f -> %.0f",
                                 PLUGIN_TAG, speed, max_speed);
@@ -128,12 +132,16 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
             }
         }
     }
-    else if (is_on_ground)
+    else if (_num_hops != 0 && is_on_ground)
     {
-        _num_hops = 0;
+        _rest_duration += GetTickInterval();
+        if (_rest_duration > 1.0)
+        {
+            _num_hops = 0;
+        }
     }
 
-    was_on_ground_last_cmd = is_on_ground;
+    _was_on_ground_last_cmd = is_on_ground;
 
     _prev_ghoster_pos = pos;
 
@@ -144,9 +152,11 @@ void ResetGhoster()
 {
     _ghost_carrier = 0;
     _num_hops = 0;
+    _rest_duration = 0.0;
     _prev_ghoster_pos[0] = 0.0;
     _prev_ghoster_pos[1] = 0.0;
     _prev_ghoster_pos[2] = 0.0;
+    _was_on_ground_last_cmd = false;
 }
 
 public Action OnGhostCapture(int client)
