@@ -45,7 +45,9 @@ public void OnPluginStart()
 0: disabled, 1: notify when being limited in text chat",
         _, true, float(false), true, float(true));
     _scale = CreateConVar("sm_nt_anti_ghosthop_speed_scale", "1.0",
-        "Scaling for the of anti-ghosthop slowdown.",
+        "Scaling for the of anti-ghosthop slowdown. Higher value means \
+harsher speed penalty. 0 means no speed limit. 1 means class-specific land \
+ghost carry max speed.",
         _, true, 0.0);
     _n_allowed_hops = CreateConVar("sm_nt_anti_ghosthop_n_allowed_hops", "1",
         "How many ghost hops to tolerate before limiting speed. Resets \
