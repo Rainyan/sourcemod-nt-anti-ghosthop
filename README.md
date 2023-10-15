@@ -37,7 +37,7 @@ Thanks for attending my ted talk.
 
 ### Cvars
 * `sm_nt_anti_ghosthop_verbosity` How much feedback to give to the players about ghosthopping. 0: disabled, 1: notify when being limited in text chat. Default: 0
-* `sm_nt_anti_ghosthop_speed_scale` Scaling for the of anti-ghosthop slowdown. The final speed limit is multiplied by this value; a value of zero allows any ghost hop speed, a value of 2 allows hopping at twice the carry speed, etc. Minimum: 0.0, Default: 1.0
+* `sm_nt_anti_ghosthop_speed_scale` Scaling for the of anti-ghosthop slowdown. Higher value means harsher speed penalty. 0 means no speed limit. 1 means class-specific land ghost carry max speed. Minimum: 0.0, Default: 1.0
   * This cvar replaces the old, removed cvar `sm_nt_anti_ghosthop_scale`, which was a divisor instead of the current multiplier.
 * `sm_nt_anti_ghosthop_n_allowed_hops` How many ghost hops to tolerate before limiting speed. Resets at the end of the bhop chain. (It's recommended to allow at least 1 hop for players to be able to cross environment hazards in some maps with the ghost in hand.) Minimum: 0, Default: 1
 
