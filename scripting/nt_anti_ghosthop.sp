@@ -91,7 +91,6 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
     float pos[3];
     GetClientAbsOrigin(client, pos);
 
-
     bool is_on_ground = GetEntityFlags(client) & FL_ONGROUND != 0;
 
     if (!_was_on_ground_last_cmd)
