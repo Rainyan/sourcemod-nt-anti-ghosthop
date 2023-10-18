@@ -11,7 +11,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "2.0.3"
+#define PLUGIN_VERSION "2.0.4"
 #define PLUGIN_TAG "[ANTI-GHOSTHOP]"
 
 // Class specific max ghost carrier land speeds (w/ ~36.95 degree "wall hug" boost)
@@ -204,9 +204,8 @@ void ApplyAbsVelocityImpulse(int entity, const float impulse[3])
     if (call == INVALID_HANDLE)
     {
         char sig[] = "\xD9\x05\x2A\x2A\x2A\x2A\x83\xEC\x0C\x56\x57\x8B\x7C\x24\x18\xD9\x07\x8B\xF1\xDA\xE9\xDF\xE0\xF6\xC4\x44\x7A\x2A\xD9\x05\x2A\x2A\x2A\x2A\xD9\x47\x04\xDA\xE9\xDF\xE0\xF6\xC4\x44\x7A\x2A\xD9\x05\x2A\x2A\x2A\x2A\xD9\x47\x08\xDA\xE9\xDF\xE0\xF6\xC4\x44\x7B\x2A\x80\xBE\xDE\x00\x00\x00\x06\x75\x2A\x8B\x8E\xF8\x01\x00\x00\x8B\x01\x8B\x90\xB0\x00\x00\x00";
-        int sig_size = 87;
         StartPrepSDKCall(SDKCall_Entity);
-        PrepSDKCall_SetSignature(SDKLibrary_Server, sig, sig_size);
+        PrepSDKCall_SetSignature(SDKLibrary_Server, sig, sizeof(sig) - 1);
         PrepSDKCall_AddParameter(SDKType_Vector, SDKPass_ByRef);
         call = EndPrepSDKCall();
         if (call == INVALID_HANDLE)
