@@ -11,7 +11,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "2.0.2"
+#define PLUGIN_VERSION "2.0.3"
 #define PLUGIN_TAG "[ANTI-GHOSTHOP]"
 
 // Class specific max ghost carrier land speeds (w/ ~36.95 degree "wall hug" boost)
@@ -113,7 +113,7 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
                 float speed = GetVectorLength(ups);
                 float max_speed = GetMaxGhostSpeed(client) * _scale.FloatValue;
 
-                if (speed != 0 && speed > max_speed)
+                if (speed > max_speed)
                 {
                     ScaleVector(ups, max_speed / speed);
                     ApplyAbsVelocityImpulse(client, ups);
