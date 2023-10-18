@@ -193,7 +193,7 @@ float GetMaxGhostSpeed(int client)
         case CLASS_ASSAULT: return MAX_SPEED_ASSAULT;
         case CLASS_SUPPORT: return MAX_SPEED_SUPPORT;
     }
-	// Note: Must fail on unknown class to avoid division by zero at call site
+    // Note: Must fail on unknown class to avoid division by zero at call site
     SetFailState("Unknown class %d for client %N (%d)", GetPlayerClass(client), client, client);
     return 0.0;
 }
