@@ -1,7 +1,7 @@
 # sourcemod-nt-anti-ghosthop
 SourceMod plugin for Neotokyo that limits the max movement speed while bunnyhopping with the ghost:
 
-![hop_vel](https://github.com/Rainyan/sourcemod-nt-anti-ghosthop/assets/6595066/49cff622-c80e-4b1b-849d-b3f80d2d537d)
+![velocity vector plot](https://github.com/Rainyan/sourcemod-nt-anti-ghosthop/assets/6595066/8ecaf061-85e6-4cd9-b45b-937427fada8f)
 
 where:
 * v<sub>0</sub> = initial lateral velocity
