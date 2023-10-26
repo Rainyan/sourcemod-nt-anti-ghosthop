@@ -3,7 +3,7 @@ SourceMod plugin for Neotokyo that limits the max movement speed while bunnyhopp
 
 ![hop_vel](https://github.com/Rainyan/sourcemod-nt-anti-ghosthop/assets/6595066/94548bc0-8623-45d2-8d17-fb4cee01eca6)
 
-where v0 = initial lateral velocity, Δv = inverse velocity impulse, vf = final lateral velocity.
+where v<sub>0</sub> = initial lateral velocity, Δv = inverse velocity impulse, v<sub>f</sub> = final lateral velocity.
 
 ## Example video:
 
