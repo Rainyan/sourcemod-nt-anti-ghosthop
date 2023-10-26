@@ -5,6 +5,8 @@ SourceMod plugin for Neotokyo that limits the max movement speed while bunnyhopp
 
 where v<sub>0</sub> = initial lateral velocity, Δv = velocity impulse (inverse of overspeed), v<sub>f</sub> = final lateral velocity, clamped within max ghost carry speed.
 
+The overspeed limiter only triggers at the moment of the player's feet touching the ground; air strafes are unaffected.
+
 ## Example video:
 
 [hop_example.webm](https://github.com/Rainyan/sourcemod-nt-anti-ghosthop/assets/6595066/1502bdd3-8341-4cc4-ad64-7ab048ff111e)
