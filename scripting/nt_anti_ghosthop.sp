@@ -6,7 +6,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "2.0.4"
+#define PLUGIN_VERSION "2.0.5"
 #define PLUGIN_TAG "[ANTI-GHOSTHOP]"
 
 // Class specific max ghost carrier land speeds (w/ ~36.95 degree "wall hug" boost)
@@ -114,9 +114,9 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 
                     if (_verbose.BoolValue)
                     {
-                        static float last_nag_time;
-                        float time = GetGameTime();
-                        if (time - last_nag_time > 15.0)
+                        static int last_nag_time;
+                        int time = GetTime();
+                        if (time - last_nag_time > 15)
                         {
                             PrintToChat(client, "%s Limiting speed: %.0f -> %.0f",
                                 PLUGIN_TAG, speed, max_speed);
