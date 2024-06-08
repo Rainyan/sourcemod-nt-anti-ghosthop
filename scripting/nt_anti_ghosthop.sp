@@ -6,7 +6,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "2.0.5"
+#define PLUGIN_VERSION "3.0.0"
 #define PLUGIN_TAG "[ANTI-GHOSTHOP]"
 
 // Class specific max ghost carrier land speeds (w/ ~36.95 degree "wall hug" boost)
@@ -20,6 +20,14 @@ static float _prev_ghoster_pos[3];
 static float _rest_duration;
 static bool _was_on_ground_last_cmd;
 
+// There seems to be some kind of "drift" in bhop tick speed calculations,
+// where some hops get a ups speed of 0 and others double speed for the missed one.
+// Smooth out ups checks over several ticks to avoid false positives.
+#define N_SPEED_SAMPLES 2
+#assert N_SPEED_SAMPLES > 0
+static float _avg_speed[N_SPEED_SAMPLES];
+static int _avg_speed_head;
+
 ConVar _verbose, _scale, _n_allowed_hops;
 
 public Plugin myinfo = {
@@ -32,20 +40,22 @@ public Plugin myinfo = {
 
 public void OnPluginStart()
 {
+    ClearAvgSpeed();
+
     CreateConVar("sm_nt_anti_ghosthop_version", PLUGIN_VERSION,
         "NT Anti Ghosthop plugin version", FCVAR_DONTRECORD);
 
     _verbose = CreateConVar("sm_nt_anti_ghosthop_verbosity", "0",
         "How much feedback to give to the players about ghosthopping. \
-0: disabled, 1: notify when being limited in text chat",
-        _, true, float(false), true, float(true));
+0: disabled, 1: notify when being limited in text chat occasionally, \
+2: notify for every single limited hop",
+        _, true, 0.0, true, 2.0);
     _scale = CreateConVar("sm_nt_anti_ghosthop_speed_scale", "1.0",
-        "Scaling for the of anti-ghosthop slowdown. Higher value means \
-harsher speed penalty. 0 means no speed limit. 1 means class-specific land \
-ghost carry max speed.",
+        "Max allowed ghosthop speed before slowdown begins. 1.0 means class specific \
+max ghost movement speed, 0.0 means no speed limit.",
         _, true, 0.0);
-    _n_allowed_hops = CreateConVar("sm_nt_anti_ghosthop_n_allowed_hops", "1",
-        "How many ghost hops to tolerate before limiting speed. Resets \
+    _n_allowed_hops = CreateConVar("sm_nt_anti_ghosthop_n_extra_hops", "0",
+        "How many extra ghost hops to tolerate before limiting speed. Resets \
 at the end of the bhop chain.", _, true, 0.0);
 
     HookEvent("game_round_start", OnRoundStart, EventHookMode_Pre);
@@ -74,19 +84,52 @@ public void OnClientDisconnect_Post(int client)
     }
 }
 
-public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3],
-    float angles[3], int& weapon, int& subtype, int& cmdnum, int& tickcount,
-    int& seed, int mouse[2])
+public void OnGameFrame()
 {
-    if (client != _ghost_carrier)
+    if (!_ghost_carrier ||
+        !IsClientInGame(_ghost_carrier) ||
+        !IsPlayerAlive(_ghost_carrier))
     {
-        return Plugin_Continue;
+        return;
     }
 
+    CheckGhostCarrierSlowdown(_ghost_carrier);
+}
+
+void RecordSpeed(float speed)
+{
+    //PrintToChatAll("Speed: %f", speed);
+    _avg_speed[_avg_speed_head] = speed;
+    _avg_speed_head = (_avg_speed_head+1) % sizeof(_avg_speed);
+}
+
+float GetAvgSpeed()
+{
+    float speed;
+    for (int i = 0; i < sizeof(_avg_speed); ++i)
+    {
+        speed += _avg_speed[i];
+    }
+    speed /= sizeof(_avg_speed);
+    //PrintToChatAll("Avg: %f", speed);
+    return speed;
+}
+
+void ClearAvgSpeed()
+{
+    for (int i = 0; i < sizeof(_avg_speed); ++i)
+    {
+        _avg_speed[i] = 200.0;
+    }
+}
+
+void CheckGhostCarrierSlowdown(int client)
+{
     float pos[3];
     GetClientAbsOrigin(client, pos);
 
     bool is_on_ground = GetEntityFlags(client) & FL_ONGROUND != 0;
+    float delta_time = GetGameFrameTime();
 
     if (!_was_on_ground_last_cmd)
     {
@@ -99,28 +142,40 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
             {
                 float ups[3];
                 SubtractVectors(_prev_ghoster_pos, pos, ups);
-                float delta_time = GetTickInterval();
                 ups[0] /= delta_time;
                 ups[1] /= delta_time;
                 ups[2] = 0.0;
 
                 float speed = GetVectorLength(ups);
+                RecordSpeed(speed);
                 float max_speed = GetMaxGhostSpeed(client) * _scale.FloatValue;
 
                 if (speed > max_speed)
                 {
-                    ScaleVector(ups, max_speed / speed);
+                    NormalizeVector(ups, ups);
+                    ScaleVector(ups, (-max_speed+GetAvgSpeed()));
                     ApplyAbsVelocityImpulse(client, ups);
+                    ClearAvgSpeed();
 
                     if (_verbose.BoolValue)
                     {
-                        static int last_nag_time;
-                        int time = GetTime();
-                        if (time - last_nag_time > 15)
+                        bool printNow = (_verbose.IntValue == 2);
+
+                        if (!printNow)
                         {
-                            PrintToChat(client, "%s Limiting speed: %.0f -> %.0f",
-                                PLUGIN_TAG, speed, max_speed);
-                            last_nag_time = time;
+                            static int last_nag_time;
+                            int time = GetTime();
+                            printNow = (time - last_nag_time > 15);
+                            if (printNow)
+                            {
+                                last_nag_time = time;
+                            }
+                        }
+
+                        if (printNow)
+                        {
+                            PrintToChat(client, "%s Limiting speed to %.0f",
+                                PLUGIN_TAG, max_speed);
                         }
                     }
                 }
@@ -137,10 +192,7 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
     }
 
     _was_on_ground_last_cmd = is_on_ground;
-
     _prev_ghoster_pos = pos;
-
-    return Plugin_Continue;
 }
 
 void ResetGhoster()
@@ -152,6 +204,8 @@ void ResetGhoster()
     _prev_ghoster_pos[1] = 0.0;
     _prev_ghoster_pos[2] = 0.0;
     _was_on_ground_last_cmd = false;
+
+    ClearAvgSpeed();
 }
 
 public Action OnGhostCapture(int client)

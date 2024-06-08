@@ -40,7 +40,7 @@ Thanks for attending my ted talk.
 ## More info for server operators
 
 ### Build requirements
-* SourceMod version 1.7 or newer
+* SourceMod version 1.9 or newer
 * The [Neotokyo include](https://github.com/softashell/sourcemod-nt-include) .inc file (place inside <i>scripting/includes</i>)
 
 ### Plugin requirements
