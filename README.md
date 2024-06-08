@@ -10,9 +10,16 @@ where:
 
 The overspeed limiter only triggers at the moment of the player's feet touching the ground; air strafes are unaffected.
 
-## Example video:
+## Example videos:
+
+### Walking cap with max speed (about 14 seconds), and ghost hop blocked by the plugin, side by side:
 
 [hop_example.webm](https://github.com/Rainyan/sourcemod-nt-anti-ghosthop/assets/6595066/f4c784b1-1309-49e5-83ba-eba7c72d693b)
+
+### Unrestricted ghost hop (about 9 seconds):
+
+[hopex2.webm](https://github.com/Rainyan/sourcemod-nt-anti-ghosthop/assets/6595066/61589967-6ed9-4631-97a5-e11e74237d16)
+
 
 ## Some background
 NT has a max speed limitation for the ghost carrier to make rushy quick capping less effective.
