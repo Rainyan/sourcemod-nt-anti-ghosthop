@@ -12,7 +12,7 @@ The overspeed limiter only triggers at the moment of the player's feet touching 
 
 ## Example video:
 
-[hop_example.webm](https://github.com/Rainyan/sourcemod-nt-anti-ghosthop/assets/6595066/1502bdd3-8341-4cc4-ad64-7ab048ff111e)
+[hop_example.webm](https://github.com/Rainyan/sourcemod-nt-anti-ghosthop/assets/6595066/f4c784b1-1309-49e5-83ba-eba7c72d693b)
 
 ## Some background
 NT has a max speed limitation for the ghost carrier to make rushy quick capping less effective.
