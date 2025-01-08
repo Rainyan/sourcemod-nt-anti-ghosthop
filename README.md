@@ -51,4 +51,4 @@ This plugin suggests a different approach, whereby ghost hopping is restricted p
 
 
 ### What happened to the older versions?
-The old versions are still available [from the tags](https://github.com/Rainyan/sourcemod-nt-anti-ghosthop/tags). Note that any tags older than the newest one are no longer supported.
+The old versions are still available [from the tags](https://github.com/Rainyan/sourcemod-nt-anti-ghosthop/tags). Note that any tags older than the newest non-prerelease are no longer supported.
