@@ -33,7 +33,7 @@ This plugin suggests a different approach, whereby ghost hopping is restricted p
 ## More info for server operators
 
 ### Build requirements
-* SourceMod version 1.9 or newer
+* SourceMod version 1.8 or newer
 * The [Neotokyo include](https://github.com/softashell/sourcemod-nt-include) .inc file (place inside <i>scripting/includes</i>)
 
 ### Plugin requirements
