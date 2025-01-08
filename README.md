@@ -29,6 +29,7 @@ This plugin suggests a different approach, whereby ghost hopping is restricted p
 
 <hr>
 
+
 ## More info for server operators
 
 ### Build requirements
@@ -39,6 +40,14 @@ This plugin suggests a different approach, whereby ghost hopping is restricted p
 * The [nt_ghostcap plugin](https://github.com/softashell/nt-sourcemod-plugins/blob/master/scripting/nt_ghostcap.sp) is required to use this plugin.
 
 ### Cvars
+* sm_nt_anti_ghosthop_version
+  * Default value: `PLUGIN_VERSION`
+  * Description: `NT Anti Ghosthop plugin version`
+  * Bit flags: `FCVAR_DONTRECORD`
+* sm_nt_anti_ghosthop_ratio
+  * Default value: `1.0`
+  * Description: `Scale for the max carry speed.  1 means original carry speed.  2 means double speed.  0.5 means half speed.`
+  * Min: `0.01`
 
 
 ### What happened to the older versions?
