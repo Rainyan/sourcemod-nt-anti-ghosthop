@@ -10,12 +10,10 @@
 #define PLUGIN_VERSION "4.1.2"
 #define PLUGIN_TAG "[ANTI-GHOSTHOP]"
 
-#define DEBUG_PROFILE true
+#define DEBUG_PROFILE false
 #if DEBUG_PROFILE
+#warning DEBUG PROFILING ENABLED -- this will incur a performance hit!!
 #include "benchmark"
-#else
-stock void BENCHMARK_START(){}
-stock void BENCHMARK_END(){}
 #endif
 
 // Class specific max ghost carrier land speeds,
@@ -173,7 +171,9 @@ void ThrottledNag(int ghoster)
 
 public void OnGhosterThink(int ghoster)
 {
+#if DEBUG_PROFILE
     BENCHMARK_START();
+#endif
 
     float vel[3];
     GetEntPropVector(ghoster, Prop_Data, "m_vecAbsVelocity", vel);
@@ -182,13 +182,17 @@ public void OnGhosterThink(int ghoster)
 
     if (speed_squared <= _max_speed_squared)
     {
+#if DEBUG_PROFILE
         BENCHMARK_END();
+#endif
         return;
     }
 
     if (GetEntityMoveType(ghoster) == MOVETYPE_LADDER)
     {
+#if DEBUG_PROFILE
         BENCHMARK_END();
+#endif
         return;
     }
 
@@ -200,7 +204,9 @@ public void OnGhosterThink(int ghoster)
     ScaleVector(vel, -over_speed);
     ApplyAbsVelocityImpulse(ghoster, vel);
 
+#if DEBUG_PROFILE
     BENCHMARK_END();
+#endif
 }
 
 public void OnGhostSpawn(int ghost_ref)
