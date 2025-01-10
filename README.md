@@ -39,6 +39,9 @@ This plugin suggests a different approach, whereby ghost hopping is restricted p
 ### Plugin requirements
 * The [nt_ghostcap plugin](https://github.com/softashell/nt-sourcemod-plugins/blob/master/scripting/nt_ghostcap.sp) is required to use this plugin.
 
+### Other requirements
+* The [translations](translations) must be included in the server's `addons/sourcemod/translations` directory.
+
 ### Cvars
 * sm_nt_anti_ghosthop_version
   * Default value: `PLUGIN_VERSION`
