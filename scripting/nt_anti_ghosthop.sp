@@ -7,13 +7,17 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "4.1.0"
+#define PLUGIN_VERSION "4.1.1"
 #define PLUGIN_TAG "[ANTI-GHOSTHOP]"
 
-// Class specific max ghost carrier land speeds (w/ ~36.95 degree "wall hug" boost)
-#define MAX_SPEED_RECON 255.427734
-#define MAX_SPEED_ASSAULT 204.364746
-#define MAX_SPEED_SUPPORT 204.380859
+// Class specific max ghost carrier land speeds,
+// using a "wall hug" boost angle of 0.14015 radians
+// or about 8.030003498758488 degrees.
+// To test this, use: setang 0 8.030003498758488 0
+// and offset by multiples of 90 to choose cardinal direction.
+#define MAX_SPEED_RECON 255.59
+#define MAX_SPEED_ASSAULT 204.47
+#define MAX_SPEED_SUPPORT 204.47
 
 ConVar _ratio, _verbosity;
 bool _late;
