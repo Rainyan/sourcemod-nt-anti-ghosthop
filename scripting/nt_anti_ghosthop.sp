@@ -125,10 +125,12 @@ void ThrottledNag(int ghoster)
     }
 
     static int last_nag[NEO_MAXPLAYERS];
-    int index = ghoster-1;
-    int epoch = GetTime();
-    int dt = epoch - last_nag[index];
-    int nag_cooldown_seconds = 5;
+
+    int index = ghoster-1,
+        epoch = GetTime(),
+        dt = epoch - last_nag[index],
+        nag_cooldown_seconds = 5;
+
     if (dt >= nag_cooldown_seconds)
     {
         PrintToChat(ghoster, "%s %T", PLUGIN_TAG, "SpeedLimited", LANG_SERVER);
