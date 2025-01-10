@@ -1,0 +1,7 @@
+"Phrases"
+{
+    "SpeedLimited"
+    {
+        "en"    "GHOST UPLINK - LIMITING SPEED"
+    }
+}
