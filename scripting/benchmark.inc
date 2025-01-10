@@ -4,11 +4,14 @@
 #define _BENCHMARK_INC_H_
 #endif
 
-#if SOURCEMOD_V_MAJOR == 1 && SOURCEMOD_V_MINOR < 10
+#define PROFILING_SUPPORTED (SOURCEMOD_V_MAJOR == 1 && SOURCEMOD_V_MINOR >= 10)
+#if !PROFILING_SUPPORTED
 stock void BENCHMARK_START(){}
 stock void BENCHMARK_END(){}
 #endinput
 #endif
+
+#warning DEBUG PROFILING ENABLED -- this will incur a performance hit!!
 
 #include <profiler>
 

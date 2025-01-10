@@ -12,7 +12,6 @@
 
 #define DEBUG_PROFILE false
 #if DEBUG_PROFILE
-#warning DEBUG PROFILING ENABLED -- this will incur a performance hit!!
 #include "benchmark"
 #endif
 
