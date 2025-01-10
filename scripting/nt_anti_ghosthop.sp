@@ -15,7 +15,7 @@
 #define MAX_SPEED_ASSAULT 204.364746
 #define MAX_SPEED_SUPPORT 204.380859
 
-ConVar _ratio;
+ConVar _ratio, _verbosity;
 bool _late;
 
 public Plugin myinfo = {
@@ -44,7 +44,14 @@ public void OnPluginStart()
 0.5 means half speed.",
         _, true, 0.01);
 
+    _verbosity = CreateConVar("sm_nt_anti_ghosthop_verbosity", "0.0",
+        "How verbosely should the speed limiting be announced. \
+0: no announcement. \
+1: announce to the ghoster in chat.",
+        _, true, float(false), true, float(true));
+
     AutoExecConfig();
+    LoadTranslations("nt_anti_ghosthop.phrases");
 
     if (_late)
     {
@@ -101,6 +108,27 @@ public void OnGhostPickUp(int client)
     if (!SDKHookEx(client, SDKHook_PreThink, OnGhosterThink))
     {
         SetFailState("Failed to SDKHook");
+    }
+
+    ThrottledNag(client);
+}
+
+void ThrottledNag(int ghoster)
+{
+    if (!_verbosity.BoolValue)
+    {
+        return;
+    }
+
+    static int last_nag[NEO_MAXPLAYERS];
+    int index = ghoster-1;
+    int epoch = GetTime();
+    int dt = epoch - last_nag[index];
+    int nag_cooldown_seconds = 5;
+    if (dt >= nag_cooldown_seconds)
+    {
+        PrintToChat(ghoster, "%s %T", PLUGIN_TAG, "SpeedLimited", LANG_SERVER);
+        last_nag[index] = epoch;
     }
 }
 
