@@ -7,8 +7,13 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "4.1.1"
+#define PLUGIN_VERSION "4.1.2"
 #define PLUGIN_TAG "[ANTI-GHOSTHOP]"
+
+#define DEBUG_PROFILE false
+#if DEBUG_PROFILE
+#include "benchmark"
+#endif
 
 // Class specific max ghost carrier land speeds,
 // using a "wall hug" boost angle of 0.14015 radians
@@ -19,8 +24,9 @@
 #define MAX_SPEED_ASSAULT 204.47
 #define MAX_SPEED_SUPPORT 204.47
 
-ConVar _ratio, _verbosity;
+ConVar _verbosity;
 bool _late;
+float _max_speed_squared, _ratio;
 
 public Plugin myinfo = {
     name = "NT Anti Ghosthop",
@@ -41,12 +47,14 @@ public void OnPluginStart()
     CreateConVar("sm_nt_anti_ghosthop_version", PLUGIN_VERSION,
         "NT Anti Ghosthop plugin version", FCVAR_DONTRECORD);
 
-    _ratio = CreateConVar("sm_nt_anti_ghosthop_ratio", "1.0",
+    ConVar ratio = CreateConVar("sm_nt_anti_ghosthop_ratio", "1.0",
         "Scale for the max carry speed. \
 1 means original carry speed. \
 2 means double speed. \
 0.5 means half speed.",
         _, true, 0.01);
+    ratio.AddChangeHook(OnRatioChanged);
+    _ratio = ratio.FloatValue;
 
     _verbosity = CreateConVar("sm_nt_anti_ghosthop_verbosity", "0.0",
         "How verbosely should the speed limiting be announced. \
@@ -59,23 +67,28 @@ public void OnPluginStart()
 
     if (_late)
     {
-        for (int ent = MaxClients+1; ent < GetMaxEntities(); ++ent)
+        InitGhoster();
+    }
+}
+
+void InitGhoster()
+{
+    for (int ent = MaxClients+1; ent < GetMaxEntities(); ++ent)
+    {
+        if (!IsValidEdict(ent))
         {
-            if (!IsValidEdict(ent))
-            {
-                continue;
-            }
-            if (!IsGhost(ent))
-            {
-                continue;
-            }
-            int ghoster = GetEntPropEnt(ent, Prop_Data, "m_hOwnerEntity");
-            if (ghoster != -1)
-            {
-                OnGhostPickUp(ghoster);
-            }
-            break;
+            continue;
         }
+        if (!IsGhost(ent))
+        {
+            continue;
+        }
+        int ghoster = GetEntPropEnt(ent, Prop_Data, "m_hOwnerEntity");
+        if (ghoster != -1)
+        {
+            OnGhostPickUp(ghoster);
+        }
+        break;
     }
 }
 
@@ -87,9 +100,30 @@ public void OnAllPluginsLoaded()
     }
 }
 
+public void OnConfigsExecuted()
+{
+    _ratio = FindConVar("sm_nt_anti_ghosthop_ratio").FloatValue;
+}
+
 public void OnClientDisconnect(int client)
 {
     ClearGhoster(client);
+}
+
+void OnRatioChanged(ConVar convar, const char[] oldValue, const char[] newValue)
+{
+    _ratio = StringToFloat(newValue);
+    InitGhoster();
+}
+
+void SetGhoster(int ghoster)
+{
+    if (!SDKHookEx(ghoster, SDKHook_PreThink, OnGhosterThink))
+    {
+        SetFailState("Failed to SDKHook");
+    }
+
+    _max_speed_squared = Pow(GetMaxGhostSpeed(ghoster) * _ratio, 2.0);
 }
 
 void ClearGhoster(int ghoster)
@@ -109,11 +143,7 @@ public void OnGhostDrop(int client)
 
 public void OnGhostPickUp(int client)
 {
-    if (!SDKHookEx(client, SDKHook_PreThink, OnGhosterThink))
-    {
-        SetFailState("Failed to SDKHook");
-    }
-
+    SetGhoster(client);
     ThrottledNag(client);
 }
 
@@ -125,10 +155,12 @@ void ThrottledNag(int ghoster)
     }
 
     static int last_nag[NEO_MAXPLAYERS];
-    int index = ghoster-1;
-    int epoch = GetTime();
-    int dt = epoch - last_nag[index];
-    int nag_cooldown_seconds = 5;
+
+    int index = ghoster-1,
+        epoch = GetTime(),
+        dt = epoch - last_nag[index],
+        nag_cooldown_seconds = 5;
+
     if (dt >= nag_cooldown_seconds)
     {
         PrintToChat(ghoster, "%s %T", PLUGIN_TAG, "SpeedLimited", LANG_SERVER);
@@ -138,27 +170,42 @@ void ThrottledNag(int ghoster)
 
 public void OnGhosterThink(int ghoster)
 {
+#if DEBUG_PROFILE
+    BENCHMARK_START();
+#endif
+
     float vel[3];
     GetEntPropVector(ghoster, Prop_Data, "m_vecAbsVelocity", vel);
     vel[2] = 0.0;
-    float speed = GetVectorLength(vel);
+    float speed_squared = GetVectorLength(vel, true);
 
-    float maxSpeed = GetMaxGhostSpeed(ghoster) * _ratio.FloatValue;
-
-    if (speed <= maxSpeed)
+    if (speed_squared <= _max_speed_squared)
     {
+#if DEBUG_PROFILE
+        BENCHMARK_END();
+#endif
         return;
     }
 
     if (GetEntityMoveType(ghoster) == MOVETYPE_LADDER)
     {
+#if DEBUG_PROFILE
+        BENCHMARK_END();
+#endif
         return;
     }
 
-    float overSpeed = speed - maxSpeed;
+    float speed = SquareRoot(speed_squared);
+    float max_speed = SquareRoot(_max_speed_squared);
+    float over_speed = speed - max_speed;
+
     NormalizeVector(vel, vel);
-    ScaleVector(vel, -overSpeed);
+    ScaleVector(vel, -over_speed);
     ApplyAbsVelocityImpulse(ghoster, vel);
+
+#if DEBUG_PROFILE
+    BENCHMARK_END();
+#endif
 }
 
 public void OnGhostSpawn(int ghost_ref)
