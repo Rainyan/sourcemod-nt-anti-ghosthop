@@ -48,6 +48,11 @@ This plugin suggests a different approach, whereby ghost hopping is restricted p
   * Default value: `1.0`
   * Description: `Scale for the max carry speed.  1 means original carry speed.  2 means double speed.  0.5 means half speed.`
   * Min: `0.01`
+* sm_nt_anti_ghosthop_verbosity
+  * Default value: `0.0`
+  * Description: `How verbosely should the speed limiting be announced.  0: no announcement.  1: announce to the ghoster in chat.`
+  * Min: `float(false)`
+  * Max: `float(true)`
 
 
 ### What happened to the older versions?
