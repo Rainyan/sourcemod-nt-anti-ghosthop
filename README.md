@@ -43,6 +43,7 @@ This plugin suggests a different approach, whereby ghost hopping is restricted p
 * The [translations](translations) must be included in the server's `addons/sourcemod/translations` directory.
 
 ### Cvars
+### nt_anti_ghosthop.sp
 * sm_nt_anti_ghosthop_version
   * Default value: `PLUGIN_VERSION`
   * Description: `NT Anti Ghosthop plugin version`
