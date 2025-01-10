@@ -7,7 +7,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "4.1.2"
+#define PLUGIN_VERSION "4.1.3"
 #define PLUGIN_TAG "[ANTI-GHOSTHOP]"
 
 #define DEBUG_PROFILE false
@@ -252,20 +252,8 @@ stock float GetMaxGhostSpeed(int client)
         case CLASS_ASSAULT: return MAX_SPEED_ASSAULT;
         case CLASS_SUPPORT: return MAX_SPEED_SUPPORT;
     }
-    LogErrorOnce("Unknown class %d for client %N (%d)", GetPlayerClass(client), client, client);
+    LogError("Unknown class %d for client %N (%d)", GetPlayerClass(client), client, client);
     return MAX_SPEED_RECON;
-}
-
-static void LogErrorOnce(const char[] format, any ...)
-{
-    static bool once;
-    if (!once)
-    {
-        once = !once;
-        char buffer[512];
-        VFormat(buffer, sizeof(buffer), format, 2);
-        LogError("%s", buffer);
-    }
 }
 
 stock void ApplyAbsVelocityImpulse(int entity, const float impulse[3])
